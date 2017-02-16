@@ -192,7 +192,7 @@ mod tests {
         for t in test_cases {
             let tok = lexer.next_token();
 
-            println!("{}", t.expected_literal);
+            // println!("{}", t.expected_literal);
             assert!(tok == t.expected_token, "token did not match {} != {}", tok, t.expected_literal);
         }
     }

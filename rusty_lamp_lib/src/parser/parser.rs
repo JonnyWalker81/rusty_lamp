@@ -57,7 +57,7 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.cur_token {
-            Token::Import => {
+            Token::AtSign => {
                 return self.parse_import_statement();
             },
             _ => {
@@ -67,6 +67,30 @@ impl Parser {
     }
 
     fn parse_import_statement(&mut self) -> Option<Statement> {
+        let tok = self.cur_token.clone();
+
+        if self.cur_token_is(Token::AtSign) {
+            self.next_token();
+            let import_tok = self.cur_token.clone();
+
+            if self.cur_token_is(Token::Import) {
+                self.next_token();
+                let import_literal = self.cur_token.clone();
+                let literal = match import_literal {
+                    Token::StringToken(ref s) => {
+                        s.clone()
+                    },
+                    _ => {
+                        "".into()
+                    }
+                };
+                
+                return Some(Statement {
+                    stmtKind: StatementKind::Import(import_tok, literal)
+                })
+            }
+        }
+
         return None;
     }
 
@@ -110,5 +134,23 @@ impl Parser {
     fn peek_error(&mut self, t: Token) {
         let msg = format!("expected next token to be {}, got {} instead.", t, self.peek_token);
         self.errors.push(msg);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_import() {
+        let input = r#"@import "dep.djinni""#;
+
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap_or_default();
+
+        for s in program.statements {
+            println!("{}", s.stmtKind);
+        }
     }
 }
