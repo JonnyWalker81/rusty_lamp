@@ -1,0 +1,8 @@
+[package]
+name = "rusty_lamp"
+version = "0.1.0"
+authors = ["jonnywalker"]
+
+[dependencies]
+  clap = "*"
+  rusty_lamp_lib = {path = "rusty_lamp_lib"}
