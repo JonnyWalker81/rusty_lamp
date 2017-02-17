@@ -8,6 +8,7 @@ use parser::lexer::Lexer;
 use parser::ast::{BlockStatement, Statement, StatementKind, Identifier, DataTypeStatement};
 use parser::program::Program;
 use std::fmt;
+use std::sync::Arc;
 
 pub struct Parser {
     lexer: Lexer,
@@ -178,7 +179,8 @@ impl Parser {
             let tok = self.cur_token.clone();
             match tok {
                 Token::Ident(ref s) => {
-                    if self.peek_token_is(Token::Colon) {
+                    if self.expect_peek(Token::Colon) {
+                        self.next_token();
                         block.statements.push(Statement {
                             stmtKind: StatementKind::RecordMember(tok.clone(), Identifier {
                                 token: tok.clone(),
@@ -196,7 +198,7 @@ impl Parser {
         }
 
         return Statement {
-            stmtKind: StatementKind::Enum(Token::Enum, Identifier {
+            stmtKind: StatementKind::Record(Token::Record, Identifier {
                 token: ident_tok.clone(),
                 value: ident_tok.to_str()
             }, block)
@@ -204,27 +206,66 @@ impl Parser {
     }
 
     fn parse_type(&mut self) -> DataTypeStatement {
-        self.next_token();
-        self.next_token();
+        // self.next_token();
+        // self.next_token();
 
         let type_name = self.cur_token.clone();
 
-        println!("{}", type_name);
+        println!("type_name: {}", type_name);
 
         if self.peek_token_is(Token::Lt) {
             self.next_token();
             self.next_token();
             let tok = self.cur_token.clone();
             println!("Type Token: {}", self.cur_token);
-            let data_type = match tok {
+            let data_type = match type_name {
                 Token::Type(ref d, ref s) => {
                     println!("d: {}", d);
                     match *d {
                         DataType::Map => {
-                            
+                            DataTypeStatement::None
                         },
-                        DataType::List | DataType::Set => {
-
+                        DataType::List => {
+                            println!("List Type: {}", tok);
+                            match tok {
+                                Token::Type(ref tt, ref ss) => {
+                                    match *tt {
+                                        DataType::List | DataType::Set | DataType::Map => {
+                                            DataTypeStatement::List(Arc::new(self.parse_type()))
+                                        },
+                                        _ => {
+                                            DataTypeStatement::List(Arc::new(DataTypeStatement::from_data_type(&tt)))
+                                        }
+                                    }
+                                },
+                                Token::Ident(ref s) => {
+                                    DataTypeStatement::List(Arc::new(DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})))
+                                },
+                                _ => {
+                                    DataTypeStatement::None
+                                }
+                            }
+                        },
+                        DataType::Set => {
+                            println!("Set Type: {}", tok);
+                            match tok {
+                                Token::Type(ref tt, ref ss) => {
+                                    match *tt {
+                                        DataType::List | DataType::Set | DataType::Map => {
+                                            DataTypeStatement::Set(Arc::new(self.parse_type()))
+                                        },
+                                        _ => {
+                                            DataTypeStatement::Set(Arc::new(DataTypeStatement::from_data_type(&tt)))
+                                        }
+                                    }
+                                },
+                                Token::Ident(ref s) => {
+                                    DataTypeStatement::Set(Arc::new(DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})))
+                                },
+                                _ => {
+                                    DataTypeStatement::None
+                                }
+                            }
                         }
                         _ => {
                             DataTypeStatement::from_data_type(&d)
@@ -232,10 +273,11 @@ impl Parser {
                     }
                 },
                 Token::Ident(ref s) => {
-                    DataType::Object(s.clone())
+                    println!("Object Type: {}", tok);
+                    DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})
                 },
                 _ => {
-                    DataType::None
+                    DataTypeStatement::None
                 }
             };
 
@@ -249,13 +291,13 @@ impl Parser {
         else {
             let data_type = match type_name {
                 Token::Type(ref d, ref s) => {
-                    d.clone()
+                    DataTypeStatement::from_data_type(&d)
                 },
                 Token::Ident(ref s) => {
-                    DataType::Object(s.clone())
+                    DataTypeStatement::Object(Identifier{token: type_name.clone(), value: s.clone()})
                 },
                 _ => {
-                    DataType::None
+                    DataTypeStatement::None
                 }
             };
             return data_type;
@@ -265,7 +307,7 @@ impl Parser {
             // TODO: Return error
         }
 
-        DataType::None
+        DataTypeStatement::None
     }
 
     fn peek_token_is_ident(&mut self) -> bool {
@@ -334,7 +376,7 @@ mod tests {
         }
     }
 
-    #[test]
+    // #[test]
     fn test_parse_enum() {
         let input = r#"my_enum = enum {
                           option1;
@@ -385,13 +427,19 @@ mod tests {
             expected_type: String
         }
 
-        let input = r#"my_record = record {
-                            id: i32;
-                            info: string;
-                            store: set<string>;
-                            hash: map<string, i32>;
+        // let input = r#"my_record = record {
+        //                     id: i32;
+        //                     info: string;
+        //                     store: set<string>;
+        //                     hash: map<string, i32>;
 
-                            values: list<another_record>;
+        //                     values: list<another_record>;
+                                // set_list : list<set<string>>;
+
+        //                }"#;
+
+        let input = r#"my_record = record {
+                            set_list : list<set<string>>;
                        }"#;
 
         let lexer = Lexer::new(input.into());
@@ -403,11 +451,12 @@ mod tests {
         // }
 
         let test_cases = vec![
-            TestData {expected_ident: "id".into(), expected_type: "i32".into()},
-            TestData {expected_ident: "info".into(), expected_type: "i32".into()},
-            TestData {expected_ident: "store".into(), expected_type: "i32".into()},
-            TestData {expected_ident: "hash".into(), expected_type: "i32".into()},
-            TestData {expected_ident: "values".into(), expected_type: "i32".into()},
+            // TestData {expected_ident: "id".into(), expected_type: "i32".into()},
+            // TestData {expected_ident: "info".into(), expected_type: "string".into()},
+            // TestData {expected_ident: "store".into(), expected_type: "set<string>".into()},
+            // TestData {expected_ident: "hash".into(), expected_type: "map<string, i32>".into()},
+            // TestData {expected_ident: "values".into(), expected_type: "list<another_record>".into()},
+            TestData {expected_ident: "set_list".into(), expected_type: "list<set<string>>".into()},
         ];
 
 
@@ -422,6 +471,9 @@ mod tests {
                     match s.stmtKind {
                         StatementKind::RecordMember(ref t, ref i, ref d) => {
                             assert!(i.value == test_cases[index].expected_ident, "record mumber did not match: {} != {}", i.value, test_cases[index].expected_ident);
+                            let t = format!("{}", d);
+                            assert!(t == test_cases[index].expected_type, "types do not match: {} != {}", t, test_cases[index].expected_type);
+                            println!("DataType: {}", d);
                             index = index + 1;
                         },
                         _ => {
@@ -432,7 +484,7 @@ mod tests {
                 
             },
             _ => {
-                assert!(false, "exptected Import statement, got={}.", stmt.stmtKind);
+                assert!(false, "exptected Record statement, got={}.", stmt.stmtKind);
             }
         }
     }

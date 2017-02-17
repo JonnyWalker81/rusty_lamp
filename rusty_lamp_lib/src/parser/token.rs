@@ -25,14 +25,14 @@ pub enum DataType {
     Object(String)
 }
 
-impl DataType {
-    pub fn new(name: String) -> DataType {
-        match name {
-            "i8" => DataType::Integer8,
-            "i6"
-        }
-    }
-}
+// impl DataType {
+//     pub fn new(name: String) -> DataType {
+//         match name {
+//             "i8" => DataType::Integer8,
+//             "i6"
+//         }
+//     }
+// }
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub enum Token {

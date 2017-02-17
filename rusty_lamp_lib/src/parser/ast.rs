@@ -121,7 +121,8 @@ pub enum DataTypeStatement {
     Bool,
     Set(Arc<DataTypeStatement>),
     List(Arc<DataTypeStatement>),
-    Map(Arc<DataTypeStatement>, Arc<DataTypeStatement>)
+    Map(Arc<DataTypeStatement>, Arc<DataTypeStatement>),
+    Object(Identifier)
 }
 
 impl DataTypeStatement {
@@ -139,6 +140,38 @@ impl DataTypeStatement {
             DataType::Float64 => DataTypeStatement::Float64,
             _ => DataTypeStatement::None
         }
+    }
+}
+
+impl fmt::Display for DataTypeStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            DataTypeStatement::None => "none".into(),
+            DataTypeStatement::Binary => "binary".into(),
+            DataTypeStatement::Bool => "bool".into(),
+            DataTypeStatement::Date => "date".into(),
+            DataTypeStatement::Float32 => "f32".into(),
+            DataTypeStatement::Float64 => "f64".into(),
+            DataTypeStatement::Integer8 => "i8".into(),
+            DataTypeStatement::Integer16 => "i16".into(),
+            DataTypeStatement::Integer32 => "i32".into(),
+            DataTypeStatement::Integer64 => "i64".into(),
+            DataTypeStatement::String => "string".into(),
+            DataTypeStatement::Set(ref dt) => {
+                format!("set<{}>", dt)
+            },
+            DataTypeStatement::List(ref dt) => {
+                format!("list<{}>", dt)
+            },
+            DataTypeStatement::Map(ref k, ref v) => {
+                format!("map<{}, {}>", k, v)
+            },
+            DataTypeStatement::Object(ref i) => {
+                format!("{}", i)
+            }
+        };
+
+        write!(f, "{}", printable)
     }
 }
 
