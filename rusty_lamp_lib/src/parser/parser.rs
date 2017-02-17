@@ -212,11 +212,24 @@ impl Parser {
         println!("{}", type_name);
 
         if self.peek_token_is(Token::Lt) {
+            self.next_token();
+            self.next_token();
+            let tok = self.cur_token.clone();
             println!("Type Token: {}", self.cur_token);
-            let data_type = match self.cur_token {
+            let data_type = match tok {
                 Token::Type(ref d, ref s) => {
                     println!("d: {}", d);
-                    DataTypeStatement::from_data_type(&d)
+                    match *d {
+                        DataType::Map => {
+                            
+                        },
+                        DataType::List | DataType::Set => {
+
+                        }
+                        _ => {
+                            DataTypeStatement::from_data_type(&d)
+                        }
+                    }
                 },
                 Token::Ident(ref s) => {
                     DataType::Object(s.clone())
