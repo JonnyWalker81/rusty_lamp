@@ -129,7 +129,7 @@ impl Lexer {
             'a'...'z' => true,
             'A'...'Z' => true,
             '0'...'9' => true,
-            // '_' => true,
+            '_' => true,
             _ => false
         };
 

@@ -7,6 +7,7 @@ use std::fmt;
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub enum DataType {
+    None,
     Integer8,
     Integer16,
     Integer32,
@@ -20,7 +21,17 @@ pub enum DataType {
     Binary,
     Date,
     Set,
-    Optional
+    Optional,
+    Object(String)
+}
+
+impl DataType {
+    pub fn new(name: String) -> DataType {
+        match name {
+            "i8" => DataType::Integer8,
+            "i6"
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
@@ -48,6 +59,17 @@ pub enum Token {
     True,
     False,
     AtSign
+}
+
+impl Token {
+    pub fn to_str(&self) -> String {
+        match *self {
+            Token::Ident(ref s) => {
+                s.clone()
+            },
+            _=> format!("{}", *self)
+        }
+    }
 }
 
 
@@ -86,6 +108,7 @@ impl fmt::Display for Token {
 impl fmt::Display for DataType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
+            DataType::None => "none",
             DataType::Integer8 => "i8",
             DataType::Integer16 => "i16",
             DataType::Integer32 => "i32",
@@ -99,7 +122,8 @@ impl fmt::Display for DataType {
             DataType::Map => "map",
             DataType::Set => "set",
             DataType::String => "string",
-            DataType::Optional => "optional"
+            DataType::Optional => "optional",
+            DataType::Object(_) => "object"
         };
 
         write!(f, "{}", printable)

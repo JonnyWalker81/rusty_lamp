@@ -5,6 +5,7 @@
 
 use parser::token::{Token, DataType};
 use std::fmt;
+use std::sync::Arc;
 // use std::fmt::write;
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
@@ -12,20 +13,32 @@ pub struct Statement {
     pub stmtKind: StatementKind
 }
 
+impl Statement {
+    pub fn new() -> Statement {
+        Statement {
+            stmtKind: StatementKind::Noop
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub enum StatementKind {
+    Noop,
     Import(Token, String),
     Interface(Token, Identifier, BlockStatement),
     Record(Token, Identifier, BlockStatement),
     Enum(Token, Identifier, BlockStatement),
     EnumMember(Token, Identifier),
-    RecordMember(Token, Identifier, DataType),
+    RecordMember(Token, Identifier, DataTypeStatement),
     Function(Token, Identifier, Vec<Statement>, DataType)
 }
 
 impl fmt::Display for StatementKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
+            StatementKind::Noop => {
+                "noop".into()
+            }
             StatementKind::Import(ref t, ref s) => {
                 format!("@import {}", s)
             },
@@ -80,6 +93,52 @@ impl fmt::Display for StatementKind {
         };
 
         write!(f, "{}", printable)
+    }
+}
+
+pub enum PrimitiveTypes {
+    string,
+    i8,
+    i16,
+    i32,
+    i64,
+    f32,
+    f64
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
+pub enum DataTypeStatement {
+    None,
+    String,
+    Integer8,
+    Integer16,
+    Integer32,
+    Integer64,
+    Float32,
+    Float64,
+    Binary,
+    Date,
+    Bool,
+    Set(Arc<DataTypeStatement>),
+    List(Arc<DataTypeStatement>),
+    Map(Arc<DataTypeStatement>, Arc<DataTypeStatement>)
+}
+
+impl DataTypeStatement {
+    pub fn from_data_type(dt: &DataType) -> DataTypeStatement {
+        match *dt {
+            DataType::Binary => DataTypeStatement::Binary,
+            DataType::Bool => DataTypeStatement::Bool,
+            DataType::Date => DataTypeStatement::Date,
+            DataType::String => DataTypeStatement::String,
+            DataType::Integer8 => DataTypeStatement::Integer8,
+            DataType::Integer16 => DataTypeStatement::Integer16,
+            DataType::Integer32 => DataTypeStatement::Integer32,
+            DataType::Integer64 => DataTypeStatement::Integer64,
+            DataType::Float32 => DataTypeStatement::Float32,
+            DataType::Float64 => DataTypeStatement::Float64,
+            _ => DataTypeStatement::None
+        }
     }
 }
 
