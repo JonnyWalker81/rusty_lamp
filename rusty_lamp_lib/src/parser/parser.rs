@@ -644,6 +644,9 @@ mod tests {
                 //     method_returning_nothing(value: i32);
                 //     method_returning_some_type(key: string): another_record;
                 // }
+        struct TestData {
+            expected_ident: String,
+        }
 
         let input = r#"
                 my_cpp_interface = interface +c {
@@ -661,10 +664,46 @@ mod tests {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap_or_default();
 
-        
+        let test_cases = vec![
+            TestData{expected_ident: "#method with no return value".into()},
+            TestData{expected_ident: "method_returning_nothing".into()},
+            TestData{expected_ident: "method_multiple_params".into()},
+            TestData{expected_ident: "# Comments can also be put here".into()},
+            TestData{expected_ident: "method_returning_some_type".into()},
+            TestData{expected_ident: "get_version".into()},
+        ];
+
         println!("Number of Statements: {}", program.statements.len());
-        for s in program.statements {
+        for s in program.statements.clone() {
             println!("{}", s.stmtKind);
+        }
+
+        let stmt = program.statements[0].clone();
+        match stmt.stmtKind {
+            StatementKind::Interface(ref t, ref i, ref it, ref b) => {
+                assert!(i.value == "my_cpp_interface", "Interface name did not match: {} != {}", i.value, "my_cpp_interface");
+
+                let mut index = 0;
+                for bs in b.statements.clone() {
+                    match bs.stmtKind {
+                        StatementKind::Function(ref t, ref m, ref i, ref p, ref d) => {
+                            assert!(i.value == test_cases[index].expected_ident, "Identifier did not match: {} != {}", i.value, test_cases[index].expected_ident);
+                            index = index + 1;
+                        },
+                        StatementKind::Comment(ref t, ref s) => {
+                            let comment = format!("{}", t);
+                            assert!(comment == test_cases[index].expected_ident, "Comment did not match: {} != {}", comment, test_cases[index].expected_ident);
+                            index = index + 1;
+                        },
+                        _ => {
+                            assert!(false, "Expected a function, comment or const statement, got={}", bs.stmtKind);
+                        }
+                    }
+                }
+            },
+            _ => {
+                assert!(false, "exptected Interface statement, got={}.", stmt.stmtKind);
+            }
         }
     }
 }
