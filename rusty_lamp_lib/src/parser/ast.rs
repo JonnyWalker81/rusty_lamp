@@ -25,12 +25,13 @@ impl Statement {
 pub enum StatementKind {
     Noop,
     Import(Token, String),
-    Interface(Token, Identifier, BlockStatement),
+    Interface(Token, Identifier, Vec<InterfaceType>, BlockStatement),
     Record(Token, Identifier, BlockStatement),
     Enum(Token, Identifier, BlockStatement),
     EnumMember(Token, Identifier),
     RecordMember(Token, Identifier, DataTypeStatement),
-    Function(Token, Identifier, Vec<Statement>, DataType)
+    Comment(Token, String),
+    Function(Token, FunctionModifier, Identifier, Vec<Parameter>, DataTypeStatement)
 }
 
 impl fmt::Display for StatementKind {
@@ -42,10 +43,17 @@ impl fmt::Display for StatementKind {
             StatementKind::Import(ref t, ref s) => {
                 format!("@import {}", s)
             },
-            StatementKind::Interface(ref t, ref i, ref b) => {
+            StatementKind::Interface(ref t, ref i, ref it, ref b) => {
                 let mut result = String::new();
 
-                result.push_str(format!("{} = interface {{", i).as_str());
+                let mut interface_types = Vec::new();
+                for intfc_type in it {
+                    interface_types.push(format!("{}", intfc_type));
+                }
+
+                result.push_str(format!("{} = interface ", i).as_str());
+                result.push_str(interface_types.join(" ").as_str());
+                result.push_str(" {");
                 result.push_str(format!("{}", b).as_str());
                 result.push_str("}");
 
@@ -75,21 +83,73 @@ impl fmt::Display for StatementKind {
             StatementKind::RecordMember(ref t, ref i, ref d) => {
                 format!("{}: {};", i, d)
             },
-            StatementKind::Function(ref t, ref i, ref s, ref r) => {
+            StatementKind::Function(ref t, ref m, ref i, ref p, ref r) => {
                 let mut result = String::new();
 
-                result.push_str(format!("{}(", i).as_str());
+                result.push_str(format!("{} {}(", m, i).as_str());
 
                 let mut parameters = Vec::new();
-                for stmt in s {
-                    parameters.push(format!("{}", stmt.stmtKind));
+                for param in p {
+                    parameters.push(format!("{}", param));
                 }
 
                 result.push_str(parameters.join(", ").as_str());
                 result.push_str(format!("): {};", r).as_str());
 
                 result
+            },
+            StatementKind::Comment(ref t, ref s) => {
+                format!("#{}", s)
             }
+        };
+
+        write!(f, "{}", printable)
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
+pub struct Parameter {
+    pub ident: Identifier,
+    pub data_type: DataTypeStatement
+}
+
+impl fmt::Display for Parameter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let result = format!("({}: {})", self.ident, self.data_type);
+        write!(f, "{}", result)
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
+pub enum FunctionModifier {
+    None,
+    Static
+}
+
+impl fmt::Display for FunctionModifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            FunctionModifier::Static => "static",
+            _ => ""
+        };
+
+        write!(f, "{}", printable)
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
+pub enum InterfaceType {
+    Java,
+    ObjectiveC,
+    Cpp
+}
+
+impl fmt::Display for InterfaceType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            InterfaceType::Java => "+j",
+            InterfaceType::ObjectiveC => "+o",
+            InterfaceType::Cpp => "+c"
         };
 
         write!(f, "{}", printable)

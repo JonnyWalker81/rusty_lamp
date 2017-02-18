@@ -5,7 +5,9 @@
 
 use parser::token::{Token, DataType};
 use parser::lexer::Lexer;
-use parser::ast::{BlockStatement, Statement, StatementKind, Identifier, DataTypeStatement};
+use parser::ast::{BlockStatement, Statement, StatementKind,
+                  Identifier, DataTypeStatement, InterfaceType,
+                  Parameter, FunctionModifier };
 use parser::program::Program;
 use std::fmt;
 use std::sync::Arc;
@@ -65,12 +67,30 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
-        match self.cur_token {
+        let tok = self.cur_token.clone();
+        match tok {
             Token::AtSign => {
                 return self.parse_import_statement();
             },
+            Token::Comment(ref s) => {
+                return Some(self.parse_comment_statement());
+            },
             _ => {
                 return self.build_block_statements();
+            }
+        }
+    }
+
+    fn parse_comment_statement(&mut self) -> Statement {
+        println!("Comment: {}", self.cur_token);
+        match self.cur_token {
+            Token::Comment(ref s) => {
+                return Statement{
+                    stmtKind: StatementKind::Comment(self.cur_token.clone(), s.clone())
+                };
+            },
+            _ => {
+                return Statement::new();
             }
         }
     }
@@ -93,7 +113,7 @@ impl Parser {
                         "".into()
                     }
                 };
-                
+
                 return Some(Statement {
                     stmtKind: StatementKind::Import(import_tok, literal)
                 })
@@ -126,7 +146,7 @@ impl Parser {
                 },
                 Token::Interface  => {
                     return Some(self.parse_interface_statement(ident_tok));
-                }
+                },
                 _ => {
                     return Some(Statement::new());
                 }
@@ -155,6 +175,9 @@ impl Parser {
                         });
                     }
                 },
+                Token::Comment(_) => {
+                    block.statements.push(self.parse_comment_statement());
+                }
                 _ => {
                     
                 }
@@ -192,6 +215,9 @@ impl Parser {
                         });
                     }
                 },
+                Token::Comment(_) => {
+                    block.statements.push(self.parse_comment_statement());
+                }
                 _ => {
                     
                 }
@@ -310,7 +336,122 @@ impl Parser {
     }
 
     fn parse_interface_statement(&mut self, ident: Token) -> Statement {
-       Statement::new() 
+        let ident_tok = ident;
+        println!("ident: {}", ident_tok.to_str());
+
+        self.next_token();
+
+        println!("next: {}", self.cur_token);
+
+        let mut interface_types = Vec::new();
+        while !self.cur_token_is(Token::LBrace) {
+            match self.cur_token {
+                Token::JavaInterface => {
+                    interface_types.push(InterfaceType::Java);
+                },
+                Token::ObjCInterface => {
+                    interface_types.push(InterfaceType::ObjectiveC);
+                },
+                Token::CppInterface => {
+                    interface_types.push(InterfaceType::Cpp);
+                },
+                _ => {
+                }
+            }
+
+            self.next_token();
+        }
+
+        let mut modifier = FunctionModifier::None;
+        let mut block = BlockStatement {token: Token::Record, statements: Vec::new() };
+        while !self.cur_token_is(Token::RBrace) {
+            let tok = self.cur_token.clone();
+            match tok {
+                Token::Static => {
+                    modifier = FunctionModifier::Static;
+                },
+                Token::Ident(ref s) => {
+                    if self.expect_peek(Token::LParen) {
+                        self.next_token();
+                        block.statements.push(Statement {
+                            stmtKind: StatementKind::Function(tok.clone(), modifier.clone(), Identifier {
+                                token: tok.clone(),
+                                value: s.clone()
+                            }, self.parse_parameters(), self.parse_return_type())
+                        });
+                    }
+                },
+                Token::Comment(_) => {
+                    block.statements.push(self.parse_comment_statement());
+                }
+                _ => {
+                }
+            }
+
+            self.next_token();
+        }
+
+        return Statement {
+            stmtKind: StatementKind::Interface(Token::Record, Identifier {
+                token: ident_tok.clone(),
+                value: ident_tok.to_str()
+            }, interface_types, block)
+        }
+    }
+
+    fn parse_parameters(&mut self) -> Vec<Parameter> {
+        let mut parameters = Vec::new();
+
+        if self.peek_token_is(Token::RParen) {
+            self.next_token();
+            return parameters;
+        }
+
+        // self.next_token();
+
+        let mut cur_tok = self.cur_token.clone();
+        while !self.cur_token_is(Token::RParen) {
+            println!("cur_tok: {}", self.cur_token);
+            cur_tok = self.cur_token.clone();
+            match cur_tok {
+                Token::Ident(ref s) => {
+                    let id = Identifier {token: cur_tok.clone(), value: s.clone()};
+                    if self.expect_peek(Token::Colon) {
+                        self.next_token();
+                        let t = self.parse_type();
+                        let p = Parameter {
+                            ident: id,
+                            data_type: t
+                        };
+
+                        parameters.push(p);
+
+                        if self.peek_token_is(Token::Comma) {
+                            self.next_token();
+                        }
+                    }
+                },
+                _ => {
+                }
+            }
+
+            self.next_token();
+        }
+
+        parameters
+    }
+
+    fn parse_return_type(&mut self) -> DataTypeStatement {
+        self.next_token();
+        println!("return tok: {}", self.cur_token);
+        if self.cur_token_is(Token::Colon) {
+            self.next_token();
+            let t = self.parse_type();
+            if self.expect_peek(Token::Semicolon) {
+                return t;
+            }
+        }
+        DataTypeStatement::None
     }
 
     fn peek_token_is_ident(&mut self) -> bool {
@@ -358,15 +499,17 @@ mod tests {
 
     #[test]
     fn test_parse_import() {
-        let input = r#"@import "dep.djinni""#;
+        let input = r#"@import "dep.djinni"
+                       #comment test
+                      "#;
 
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap_or_default();
 
-        // for s in program.statements {
-        //     println!("{}", s.stmtKind);
-        // }
+        for s in program.statements.clone() {
+            println!("{}", s.stmtKind);
+        }
 
         let stmt = program.statements[0].clone();
         match stmt.stmtKind {
@@ -497,10 +640,20 @@ mod tests {
 
     #[test]
     fn test_interface_statement() {
+                //         my_cpp_interface = interface +c {
+                //     method_returning_nothing(value: i32);
+                //     method_returning_some_type(key: string): another_record;
+                // }
+
         let input = r#"
                 my_cpp_interface = interface +c {
+                    #method with no return value
                     method_returning_nothing(value: i32);
+
+                    method_multiple_params(first: string, value: i32): list<string>;
+                    # Comments can also be put here
                     method_returning_some_type(key: string): another_record;
+                    static get_version(): i32;
                 }
                     "#;
 
@@ -509,6 +662,7 @@ mod tests {
         let program = parser.parse_program().unwrap_or_default();
 
         
+        println!("Number of Statements: {}", program.statements.len());
         for s in program.statements {
             println!("{}", s.stmtKind);
         }

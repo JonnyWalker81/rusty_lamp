@@ -62,12 +62,18 @@ impl Lexer {
             },
             '+' => {
                 let peek = self.peek_char();
-                match peek {
+                let interface_type = match peek {
                     'j' => Token::JavaInterface,
                     'o' => Token::ObjCInterface,
                     'c' => Token::CppInterface,
                     _ => Token::Illegal
+                };
+
+                if interface_type != Token::Illegal {
+                    self.read_char();
                 }
+
+                interface_type
             },
             ';' => Token::Semicolon,
             '(' => Token::LParen,
@@ -128,7 +134,7 @@ impl Lexer {
             }
         }
 
-        return String::from_str(&self.input[position..self.position - 2]).unwrap();
+        return String::from_str(&self.input[position..self.position]).unwrap();
     }
 
     fn read_identifier(&mut self) -> Token {
@@ -188,8 +194,8 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = r#"@  import  enum (){}<>,; list<i32> map<string, i64>;
-                       # this is a test of a comment\n
-                           string date set<f32> record interface;"#;
+                       # this is a test of a comment
+                           string date set<f32> record interface = +c{};"#;
 
         let test_cases = vec![
             token_test_case{expected_token: Token::AtSign, expected_literal: "@".into()},
@@ -214,7 +220,7 @@ mod tests {
             token_test_case{expected_token: Token::Type(DataType::Integer64, "i64".into()), expected_literal: "i64".into()},
             token_test_case{expected_token: Token::Gt, expected_literal: ">".into()},
             token_test_case{expected_token: Token::Semicolon, expected_literal: ";".into()},
-            token_test_case{expected_token: Token::Comment("this is a test of a comment".into()), expected_literal: "# this is a test of a comment".into()},
+            token_test_case{expected_token: Token::Comment(" this is a test of a comment".into()), expected_literal: "# this is a test of a comment".into()},
             token_test_case{expected_token: Token::Type(DataType::String, "string".into()), expected_literal: "string".into()},
             token_test_case{expected_token: Token::Type(DataType::Date, "date".into()), expected_literal: "date".into()},
             token_test_case{expected_token: Token::Type(DataType::Set, "set".into()), expected_literal: "set".into()},
@@ -223,6 +229,10 @@ mod tests {
             token_test_case{expected_token: Token::Gt, expected_literal: ">".into()},
             token_test_case{expected_token: Token::Record, expected_literal: "record".into()},
             token_test_case{expected_token: Token::Interface, expected_literal: "interface".into()},
+            token_test_case{expected_token: Token::Equal, expected_literal: "=".into()},
+            token_test_case{expected_token: Token::CppInterface, expected_literal: "+c".into()},
+            token_test_case{expected_token: Token::LBrace, expected_literal: "{".into()},
+            token_test_case{expected_token: Token::RBrace, expected_literal: "}".into()},
             token_test_case{expected_token: Token::Semicolon, expected_literal: ";".into()},
             token_test_case{expected_token: Token::Eof, expected_literal: "".into()},
         ];
@@ -233,7 +243,8 @@ mod tests {
             let tok = lexer.next_token();
 
             // println!("{}", t.expected_literal);
-            assert!(tok == t.expected_token, "token did not match {} != {}", tok, t.expected_literal);
+            // println!("{}", tok);
+            assert!(tok == t.expected_token, "token did not match: {} != {}", tok, t.expected_token);
         }
     }
 }

@@ -18,6 +18,8 @@ impl Keywords {
             "record" => Token::Record,
             "interface" => Token::Interface,
             "import" => Token::Import,
+            "static" => Token::Static,
+            "const" => Token::Const,
             "i8" => Token::Type(DataType::Integer8, "i8".into()),
             "i16" => Token::Type(DataType::Integer16, "i16".into()),
             "i32" => Token::Type(DataType::Integer32, "i32".into()),

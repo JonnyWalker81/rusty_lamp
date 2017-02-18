@@ -62,6 +62,8 @@ pub enum Token {
     JavaInterface,
     ObjCInterface,
     CppInterface,
+    Static,
+    Const,
 }
 
 impl Token {
@@ -105,7 +107,8 @@ impl fmt::Display for Token {
             Token::JavaInterface => "+j".into(),
             Token::ObjCInterface => "+o".into(),
             Token::CppInterface => "+c".into(),
-            Token::Comment(ref s) => s.clone(),
+            Token::Static => "static".into(),
+            Token::Const => "const".into(),
         };
 
         write!(f, "{}", printable)
