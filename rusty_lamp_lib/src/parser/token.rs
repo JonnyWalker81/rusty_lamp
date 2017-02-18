@@ -44,7 +44,7 @@ pub enum Token {
     Record,
     Interface,
     Colon,
-    Comment,
+    Comment(String),
     Semicolon,
     Comma,
     LBrace,
@@ -58,7 +58,10 @@ pub enum Token {
     Type(DataType, String),
     True,
     False,
-    AtSign
+    AtSign,
+    JavaInterface,
+    ObjCInterface,
+    CppInterface,
 }
 
 impl Token {
@@ -84,7 +87,7 @@ impl fmt::Display for Token {
             Token::Record => "record".into(),
             Token::Interface => "interface".into(),
             Token::Colon => ":".into(),
-            Token::Comment => "#".into(),
+            Token::Comment(ref c) => format!("#{}", c),
             Token::Semicolon => ";".into(),
             Token::Comma => ",".into(),
             Token::LParen => "(".into(),
@@ -99,6 +102,10 @@ impl fmt::Display for Token {
             Token::True => "true".into(),
             Token::False => "false".into(),
             Token::AtSign => "@".into(),
+            Token::JavaInterface => "+j".into(),
+            Token::ObjCInterface => "+o".into(),
+            Token::CppInterface => "+c".into(),
+            Token::Comment(ref s) => s.clone(),
         };
 
         write!(f, "{}", printable)

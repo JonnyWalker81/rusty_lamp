@@ -44,12 +44,30 @@ impl Lexer {
         self.read_position += 1;
     }
 
+    fn peek_char(&self) -> char {
+        if self.read_position >= self.input.len() {
+            return '\0'
+        }
+        else {
+            return self.input.chars().nth(self.read_position).unwrap();
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         
         let tok = match self.ch {
             '=' => {
                 Token::Equal
+            },
+            '+' => {
+                let peek = self.peek_char();
+                match peek {
+                    'j' => Token::JavaInterface,
+                    'o' => Token::ObjCInterface,
+                    'c' => Token::CppInterface,
+                    _ => Token::Illegal
+                }
             },
             ';' => Token::Semicolon,
             '(' => Token::LParen,
@@ -63,6 +81,7 @@ impl Lexer {
             '"' => Token::StringToken(self.read_string()),
             ':' => Token::Colon,
             '@' => Token::AtSign,
+            '#' => Token::Comment(self.read_comment()),
             _ => {
                 if Lexer::is_alphanumeric(self.ch) {
                     let ident_tok = self.read_identifier();
@@ -89,13 +108,27 @@ impl Lexer {
 
         loop {
             self.read_char();
-            if self.ch == '"' {
+            if self.ch == '"' || self.ch == '\0' {
                 break;
             }
         }
 
         // return self.input.chars().skip(position).take(self.position).unwrap();
         return String::from_str(&self.input[position..self.position]).unwrap();
+    }
+
+    fn read_comment(&mut self) -> String {
+        let position = self.position + 1;
+
+        loop {
+            self.read_char();
+            if Lexer::is_newline(self.ch) || self.ch == '\0' {
+                // self.read_char();
+                break;
+            }
+        }
+
+        return String::from_str(&self.input[position..self.position - 2]).unwrap();
     }
 
     fn read_identifier(&mut self) -> Token {
@@ -112,6 +145,10 @@ impl Lexer {
 
     fn is_whitespace(&self, ch: char) -> bool {
        return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+    }
+
+    fn is_newline(ch: char) -> bool {
+        return ch == '\n' || ch =='\r';
     }
 
     fn skip_whitespace(&mut self) {
@@ -150,7 +187,9 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let input = "@  import  enum (){}<>,; list<i32> map<string, i64>; string date set<f32> record interface;";
+        let input = r#"@  import  enum (){}<>,; list<i32> map<string, i64>;
+                       # this is a test of a comment\n
+                           string date set<f32> record interface;"#;
 
         let test_cases = vec![
             token_test_case{expected_token: Token::AtSign, expected_literal: "@".into()},
@@ -175,6 +214,7 @@ mod tests {
             token_test_case{expected_token: Token::Type(DataType::Integer64, "i64".into()), expected_literal: "i64".into()},
             token_test_case{expected_token: Token::Gt, expected_literal: ">".into()},
             token_test_case{expected_token: Token::Semicolon, expected_literal: ";".into()},
+            token_test_case{expected_token: Token::Comment("this is a test of a comment".into()), expected_literal: "# this is a test of a comment".into()},
             token_test_case{expected_token: Token::Type(DataType::String, "string".into()), expected_literal: "string".into()},
             token_test_case{expected_token: Token::Type(DataType::Date, "date".into()), expected_literal: "date".into()},
             token_test_case{expected_token: Token::Type(DataType::Set, "set".into()), expected_literal: "set".into()},

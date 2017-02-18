@@ -106,8 +106,8 @@ impl Parser {
     fn build_block_statements(&mut self) -> Option<Statement> {
         let ident_tok = self.cur_token.clone();
 
-        println!("{}", ident_tok);
-        println!("{}", self.peek_token);
+        // println!("{}", ident_tok);
+        // println!("{}", self.peek_token);
         if self.peek_token_is(Token::Equal) {
             self.next_token();
             self.next_token();
@@ -123,6 +123,9 @@ impl Parser {
                     if self.peek_token_is(Token::LBrace) {
                         return Some(self.parse_record_statement(ident_tok));
                     }
+                },
+                Token::Interface  => {
+                    return Some(self.parse_interface_statement(ident_tok));
                 }
                 _ => {
                     return Some(Statement::new());
@@ -134,7 +137,7 @@ impl Parser {
 
     fn parse_enum_statement(&mut self, token: Token) -> Statement {
         let ident_tok = token;
-        println!("{}", ident_tok.to_str());
+        // println!("{}", ident_tok.to_str());
         
         self.next_token();
 
@@ -170,7 +173,7 @@ impl Parser {
 
     fn parse_record_statement(&mut self, token: Token) -> Statement {
         let ident_tok = token;
-        println!("{}", ident_tok.to_str());
+        // println!("{}", ident_tok.to_str());
 
         self.next_token();
 
@@ -206,66 +209,39 @@ impl Parser {
     }
 
     fn parse_type(&mut self) -> DataTypeStatement {
-        // self.next_token();
-        // self.next_token();
-
         let type_name = self.cur_token.clone();
 
-        println!("type_name: {}", type_name);
+        // println!("type_name: {}", type_name);
 
         if self.peek_token_is(Token::Lt) {
             self.next_token();
             self.next_token();
             let tok = self.cur_token.clone();
-            println!("Type Token: {}", self.cur_token);
+            // println!("Type Token: {}", self.cur_token);
             let data_type = match type_name {
                 Token::Type(ref d, ref s) => {
-                    println!("d: {}", d);
+                    // println!("d: {}", d);
                     match *d {
                         DataType::Map => {
-                            DataTypeStatement::None
+                            let key = self.parse_generic_type(&tok);
+                            if self.expect_peek(Token::Comma) {
+                                // println!("Map Comma: {}", self.cur_token);
+                                self.next_token();
+                                let value_tok = self.cur_token.clone();
+                                let value = self.parse_generic_type(&value_tok);
+                                DataTypeStatement::Map(Arc::new(key), Arc::new(value))
+                            }
+                            else {
+                                DataTypeStatement::None
+                            }
                         },
                         DataType::List => {
-                            println!("List Type: {}", tok);
-                            match tok {
-                                Token::Type(ref tt, ref ss) => {
-                                    match *tt {
-                                        DataType::List | DataType::Set | DataType::Map => {
-                                            DataTypeStatement::List(Arc::new(self.parse_type()))
-                                        },
-                                        _ => {
-                                            DataTypeStatement::List(Arc::new(DataTypeStatement::from_data_type(&tt)))
-                                        }
-                                    }
-                                },
-                                Token::Ident(ref s) => {
-                                    DataTypeStatement::List(Arc::new(DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})))
-                                },
-                                _ => {
-                                    DataTypeStatement::None
-                                }
-                            }
+                            // println!("List Type: {}", tok);
+                            DataTypeStatement::List(Arc::new(self.parse_generic_type(&tok)))
                         },
                         DataType::Set => {
-                            println!("Set Type: {}", tok);
-                            match tok {
-                                Token::Type(ref tt, ref ss) => {
-                                    match *tt {
-                                        DataType::List | DataType::Set | DataType::Map => {
-                                            DataTypeStatement::Set(Arc::new(self.parse_type()))
-                                        },
-                                        _ => {
-                                            DataTypeStatement::Set(Arc::new(DataTypeStatement::from_data_type(&tt)))
-                                        }
-                                    }
-                                },
-                                Token::Ident(ref s) => {
-                                    DataTypeStatement::Set(Arc::new(DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})))
-                                },
-                                _ => {
-                                    DataTypeStatement::None
-                                }
-                            }
+                            // println!("Set Type: {}", tok);
+                            DataTypeStatement::Set(Arc::new(self.parse_generic_type(&tok)))
                         }
                         _ => {
                             DataTypeStatement::from_data_type(&d)
@@ -273,7 +249,7 @@ impl Parser {
                     }
                 },
                 Token::Ident(ref s) => {
-                    println!("Object Type: {}", tok);
+                    // println!("Object Type: {}", tok);
                     DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})
                 },
                 _ => {
@@ -310,6 +286,33 @@ impl Parser {
         DataTypeStatement::None
     }
 
+    fn parse_generic_type(&mut self, tok: &Token) -> DataTypeStatement {
+        let result = match *tok {
+            Token::Type(ref tt, ref ss) => {
+                match *tt {
+                    DataType::List | DataType::Set | DataType::Map => {
+                        self.parse_type()
+                    },
+                    _ => {
+                        DataTypeStatement::from_data_type(&tt)
+                    }
+                }
+            },
+            Token::Ident(ref s) => {
+                DataTypeStatement::Object(Identifier{ token: tok.clone(), value: s.clone()})
+            },
+            _ => {
+                DataTypeStatement::None
+            }
+        };
+
+        result
+    }
+
+    fn parse_interface_statement(&mut self, ident: Token) -> Statement {
+       Statement::new() 
+    }
+
     fn peek_token_is_ident(&mut self) -> bool {
         if let Token::Ident(..) = self.peek_token {
             self.next_token();
@@ -317,7 +320,7 @@ impl Parser {
         }
         else {
             let t = self.peek_token.clone();
-            println!("peek_error -> {}", t);
+            // println!("peek_error -> {}", t);
             self.peek_error(Token::Ident(String::from("")));
             return false;
         }
@@ -376,7 +379,7 @@ mod tests {
         }
     }
 
-    // #[test]
+    #[test]
     fn test_parse_enum() {
         let input = r#"my_enum = enum {
                           option1;
@@ -398,7 +401,7 @@ mod tests {
         match stmt.stmtKind {
             StatementKind::Enum(ref t, ref i, ref b) => {
                 assert!(i.value == "my_enum", "{} != {}", i.value, "my_enum");
-                println!("{}", b);
+                // println!("{}", b);
                 let mut index = 0;
                 let block = b.clone();
                 for s in block.statements {
@@ -427,20 +430,22 @@ mod tests {
             expected_type: String
         }
 
-        // let input = r#"my_record = record {
-        //                     id: i32;
-        //                     info: string;
-        //                     store: set<string>;
-        //                     hash: map<string, i32>;
-
-        //                     values: list<another_record>;
-                                // set_list : list<set<string>>;
-
-        //                }"#;
-
         let input = r#"my_record = record {
+                            id: i32;
+                            info: string;
+                            store: set<string>;
+                            hash: map<string, i32>;
+
+                            values: list<another_record>;
                             set_list : list<set<string>>;
+                            images: image_store;
+
                        }"#;
+
+        // let input = r#"my_record = record {
+        //                     hash: map<string, i32>;
+        //                     store: image_store;
+        //                }"#;
 
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
@@ -451,12 +456,13 @@ mod tests {
         // }
 
         let test_cases = vec![
-            // TestData {expected_ident: "id".into(), expected_type: "i32".into()},
-            // TestData {expected_ident: "info".into(), expected_type: "string".into()},
-            // TestData {expected_ident: "store".into(), expected_type: "set<string>".into()},
-            // TestData {expected_ident: "hash".into(), expected_type: "map<string, i32>".into()},
-            // TestData {expected_ident: "values".into(), expected_type: "list<another_record>".into()},
+            TestData {expected_ident: "id".into(), expected_type: "i32".into()},
+            TestData {expected_ident: "info".into(), expected_type: "string".into()},
+            TestData {expected_ident: "store".into(), expected_type: "set<string>".into()},
+            TestData {expected_ident: "hash".into(), expected_type: "map<string, i32>".into()},
+            TestData {expected_ident: "values".into(), expected_type: "list<another_record>".into()},
             TestData {expected_ident: "set_list".into(), expected_type: "list<set<string>>".into()},
+            TestData {expected_ident: "images".into(), expected_type: "image_store".into()},
         ];
 
 
@@ -464,7 +470,7 @@ mod tests {
         match stmt.stmtKind {
             StatementKind::Record(ref t, ref i, ref b) => {
                 assert!(i.value == "my_record", "{} != {}", i.value, "my_enum");
-                println!("{}", b);
+                // println!("{}", b);
                 let mut index = 0;
                 let block = b.clone();
                 for s in block.statements {
@@ -473,7 +479,7 @@ mod tests {
                             assert!(i.value == test_cases[index].expected_ident, "record mumber did not match: {} != {}", i.value, test_cases[index].expected_ident);
                             let t = format!("{}", d);
                             assert!(t == test_cases[index].expected_type, "types do not match: {} != {}", t, test_cases[index].expected_type);
-                            println!("DataType: {}", d);
+                            // println!("DataType: {}", d);
                             index = index + 1;
                         },
                         _ => {
@@ -486,6 +492,25 @@ mod tests {
             _ => {
                 assert!(false, "exptected Record statement, got={}.", stmt.stmtKind);
             }
+        }
+    }
+
+    #[test]
+    fn test_interface_statement() {
+        let input = r#"
+                my_cpp_interface = interface +c {
+                    method_returning_nothing(value: i32);
+                    method_returning_some_type(key: string): another_record;
+                }
+                    "#;
+
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap_or_default();
+
+        
+        for s in program.statements {
+            println!("{}", s.stmtKind);
         }
     }
 }
