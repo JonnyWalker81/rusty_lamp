@@ -71,8 +71,8 @@ impl fmt::Display for StatementKind {
             StatementKind::Enum(ref t, ref i, ref b) => {
                 let mut result = String::new();
 
-                result.push_str(format!("{} = enum {{", i).as_str());
-                result.push_str(format!("{}", b).as_str());
+                result.push_str(format!("{} = enum {{\n", i).as_str());
+                result.push_str(format!("\t{}\n", b).as_str());
                 result.push_str("}");
 
                 result

@@ -61,7 +61,7 @@ impl Parser {
 
     fn print_tokens(&mut self) {
         for _ in 0..5 {
-            println!("{}", self.cur_token);
+            // println!("{}", self.cur_token);
             self.next_token();
         }
     }
@@ -82,7 +82,7 @@ impl Parser {
     }
 
     fn parse_comment_statement(&mut self) -> Statement {
-        println!("Comment: {}", self.cur_token);
+        // println!("Comment: {}", self.cur_token);
         match self.cur_token {
             Token::Comment(ref s) => {
                 return Statement{
@@ -337,11 +337,11 @@ impl Parser {
 
     fn parse_interface_statement(&mut self, ident: Token) -> Statement {
         let ident_tok = ident;
-        println!("ident: {}", ident_tok.to_str());
+        // println!("ident: {}", ident_tok.to_str());
 
         self.next_token();
 
-        println!("next: {}", self.cur_token);
+        // println!("next: {}", self.cur_token);
 
         let mut interface_types = Vec::new();
         while !self.cur_token_is(Token::LBrace) {
@@ -411,7 +411,7 @@ impl Parser {
 
         let mut cur_tok = self.cur_token.clone();
         while !self.cur_token_is(Token::RParen) {
-            println!("cur_tok: {}", self.cur_token);
+            // println!("cur_tok: {}", self.cur_token);
             cur_tok = self.cur_token.clone();
             match cur_tok {
                 Token::Ident(ref s) => {
@@ -443,7 +443,7 @@ impl Parser {
 
     fn parse_return_type(&mut self) -> DataTypeStatement {
         self.next_token();
-        println!("return tok: {}", self.cur_token);
+        // println!("return tok: {}", self.cur_token);
         if self.cur_token_is(Token::Colon) {
             self.next_token();
             let t = self.parse_type();
@@ -673,9 +673,9 @@ mod tests {
             TestData{expected_ident: "get_version".into()},
         ];
 
-        println!("Number of Statements: {}", program.statements.len());
+        // println!("Number of Statements: {}", program.statements.len());
         for s in program.statements.clone() {
-            println!("{}", s.stmtKind);
+            // println!("{}", s.stmtKind);
         }
 
         let stmt = program.statements[0].clone();
