@@ -89,7 +89,7 @@ impl Lexer {
             '@' => Token::AtSign,
             '#' => Token::Comment(self.read_comment()),
             _ => {
-                if Lexer::is_alphanumeric(self.ch) {
+                if Lexer::is_letter(self.ch) {
                     let ident_tok = self.read_identifier();
                     let tok = match ident_tok {
                         Token::Ident(ref s) => self.keywords.lookup_ident(s),
@@ -97,6 +97,9 @@ impl Lexer {
                     };
 
                     return tok;
+                }
+                else if Lexer::is_digit(self.ch) {
+                    return self.read_number();
                 }
                 else {
                     return Token::Illegal;
@@ -121,6 +124,22 @@ impl Lexer {
 
         // return self.input.chars().skip(position).take(self.position).unwrap();
         return String::from_str(&self.input[position..self.position]).unwrap();
+    }
+    
+    fn read_number(&mut self) -> Token {
+        let pos = self.position;
+
+        let mut r = String::new();
+        let mut is_float = false;
+        while Lexer::is_digit(self.ch) {
+            r.push(self.ch);
+            if self.ch == '.' {
+                is_float = true;
+            }
+            self.read_char();
+        }
+
+        return Token::Number(r);
     }
 
     fn read_comment(&mut self) -> String {
@@ -179,6 +198,23 @@ impl Lexer {
         return result;
     }
 
+    fn is_letter(ch: char) -> bool {
+        let result = match ch {
+            'a'...'z' => true,
+            'A'...'Z' => true,
+            '_' => true,
+            _ => false
+        };
+
+        return result;
+    }
+
+    fn is_digit(ch: char) -> bool {
+        return match ch {
+            '0'...'9' | '.' => true,
+            _ => false
+        };
+    }
 }
 
 

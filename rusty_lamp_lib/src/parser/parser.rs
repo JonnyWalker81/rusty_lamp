@@ -7,7 +7,7 @@ use parser::token::{Token, DataType};
 use parser::lexer::Lexer;
 use parser::ast::{BlockStatement, Statement, StatementKind,
                   Identifier, DataTypeStatement, InterfaceType,
-                  Parameter, FunctionModifier };
+                  Parameter, FunctionModifier, DeriveType };
 use parser::program::Program;
 use std::fmt;
 use std::sync::Arc;
@@ -217,20 +217,147 @@ impl Parser {
                 },
                 Token::Comment(_) => {
                     block.statements.push(self.parse_comment_statement());
-                }
+                },
+                Token::Const => {
+                    block.statements.push(self.parse_const_statement());
+                },
                 _ => {
-                    
                 }
             }
 
             self.next_token();
         }
 
+        let derived = self.parse_derives();
+
         return Statement {
             stmtKind: StatementKind::Record(Token::Record, Identifier {
                 token: ident_tok.clone(),
                 value: ident_tok.to_str()
-            }, block)
+            }, block, derived)
+        }
+    }
+
+    fn get_ident_string(ident: Token) -> String {
+        let ident_name = match ident {
+            Token::Ident(ref s) => {
+                s.clone()
+            },
+            _ => {
+                "".into()
+            }
+        };
+
+        ident_name
+    }
+
+    fn parse_const_statement(&mut self) -> Statement {
+        let const_tok = self.cur_token.clone();
+
+        self.next_token();
+
+        let ident = self.cur_token.clone();
+
+        let ident_name = match ident {
+            Token::Ident(ref s) => {
+                s.clone()
+            },
+            _ => {
+                "".into()
+            }
+        };
+
+        if !self.expect_peek(Token::Colon) {
+            return Statement::new();
+        }
+
+        self.next_token();
+        let const_type = self.parse_type();
+
+        if !self.expect_peek(Token::Equal) {
+            return Statement::new();
+        }
+
+        self.next_token();
+        let value = self.parse_const_value();
+
+        Statement {
+            stmtKind: StatementKind::Const(const_tok, Identifier {
+                token: ident,
+                value: ident_name},
+                                           const_type, Arc::new(value))
+        }
+    }
+
+    fn parse_const_value(&mut self) -> Statement {
+        let tok = self.cur_token.clone();
+
+        match tok {
+            Token::StringToken(ref s) => {
+                return Statement {
+                    stmtKind: StatementKind::StringLiteral(tok.clone(), s.clone())
+                };
+            },
+            Token::True => {
+                return Statement {
+                    stmtKind: StatementKind::Boolean(tok.clone(), true)
+                };
+            },
+            Token::False => {
+                return Statement {
+                    stmtKind: StatementKind::Boolean(tok.clone(), false)
+                };
+            },
+            Token::Number(ref s) => {
+                return Statement {
+                    stmtKind: StatementKind::NumberLiteral(tok.clone(), s.clone())
+                };
+            },
+            Token::LBrace => {
+                return self.parse_const_block();
+            },
+            _ => {}
+        }
+
+        println!("Parsing cont value, should not get here...");
+        Statement::new()
+    }
+
+    fn parse_const_block(&mut self) -> Statement {
+        self.next_token();
+
+        
+        let mut block_statements = Vec::new();
+        while !self.cur_token_is(Token::RBrace) {
+            println!("cur_tok: {}", self.cur_token);
+            let ident = self.cur_token.clone();
+
+            if !self.expect_peek(Token::Equal) {
+                return Statement::new();
+            }
+
+            self.next_token();
+            
+            let value = self.parse_const_value();
+            let definition = Statement{ stmtKind: StatementKind::Definition(Identifier{
+                token: ident.clone(),
+                value: Parser::get_ident_string(ident) }, Arc::new(value))
+            };
+
+            block_statements.push(definition);
+
+            if self.peek_token_is(Token::Comma) {
+                self.next_token();
+            }
+
+            self.next_token();
+        }
+
+        Statement {
+            stmtKind: StatementKind::Block(BlockStatement {
+                token: Token::Const,
+                statements: block_statements
+            })
         }
     }
 
@@ -383,7 +510,10 @@ impl Parser {
                 },
                 Token::Comment(_) => {
                     block.statements.push(self.parse_comment_statement());
-                }
+                },
+                Token::Const => {
+                    block.statements.push(self.parse_const_statement());
+                },
                 _ => {
                 }
             }
@@ -391,12 +521,56 @@ impl Parser {
             self.next_token();
         }
 
+        let derived = self.parse_derives();
+
         return Statement {
             stmtKind: StatementKind::Interface(Token::Record, Identifier {
                 token: ident_tok.clone(),
                 value: ident_tok.to_str()
-            }, interface_types, block)
+            }, interface_types, block, derived)
         }
+    }
+
+    fn parse_derives(&mut self) -> Vec<DeriveType> {
+        let derived = if self.peek_token_is(Token::Dervive) {
+            self.next_token();
+
+            println!("{}", self.peek_token);
+            if self.expect_peek(Token::LParen) {
+                let mut derives = Vec::new();
+                self.next_token();
+                println!("next token: {}", self.cur_token);
+
+                while !self.cur_token_is(Token::RParen) {
+                    match self.cur_token {
+                        Token::Eq => {
+                            derives.push(DeriveType::Eq)
+                        },
+                        Token::Ord => {
+                            derives.push(DeriveType::Ord)
+                        },
+                        _ => {
+                        }
+                    }
+
+                    if self.peek_token_is(Token::Comma) {
+                        self.next_token();
+                    }
+
+                    self.next_token();
+                }
+
+                derives
+            }
+            else {
+                Vec::new()
+            }
+        }
+        else {
+            Vec::new()
+        };
+
+        derived
     }
 
     fn parse_parameters(&mut self) -> Vec<Parameter> {
@@ -611,7 +785,7 @@ mod tests {
 
         let stmt = program.statements[0].clone();
         match stmt.stmtKind {
-            StatementKind::Record(ref t, ref i, ref b) => {
+            StatementKind::Record(ref t, ref i, ref b, ref d) => {
                 assert!(i.value == "my_record", "{} != {}", i.value, "my_enum");
                 // println!("{}", b);
                 let mut index = 0;
@@ -656,7 +830,13 @@ mod tests {
                     method_multiple_params(first: string, value: i32): list<string>;
                     # Comments can also be put here
                     method_returning_some_type(key: string): another_record;
+                    const string_const: string = "Constants can be put here";
                     static get_version(): i32;
+                    const version: i32 = 1;
+                    const min_value: another_record = {
+                        key1 = 0,
+                        key2 = ""
+                    };
                 }
                     "#;
 
@@ -670,7 +850,10 @@ mod tests {
             TestData{expected_ident: "method_multiple_params".into()},
             TestData{expected_ident: "# Comments can also be put here".into()},
             TestData{expected_ident: "method_returning_some_type".into()},
+            TestData{expected_ident: "string_const".into()},
             TestData{expected_ident: "get_version".into()},
+            TestData{expected_ident: "version".into()},
+            TestData{expected_ident: "min_value".into()},
         ];
 
         // println!("Number of Statements: {}", program.statements.len());
@@ -680,7 +863,7 @@ mod tests {
 
         let stmt = program.statements[0].clone();
         match stmt.stmtKind {
-            StatementKind::Interface(ref t, ref i, ref it, ref b) => {
+            StatementKind::Interface(ref t, ref i, ref it, ref b, ref d) => {
                 assert!(i.value == "my_cpp_interface", "Interface name did not match: {} != {}", i.value, "my_cpp_interface");
 
                 let mut index = 0;
@@ -693,6 +876,12 @@ mod tests {
                         StatementKind::Comment(ref t, ref s) => {
                             let comment = format!("{}", t);
                             assert!(comment == test_cases[index].expected_ident, "Comment did not match: {} != {}", comment, test_cases[index].expected_ident);
+                            index = index + 1;
+                        },
+                        StatementKind::Const(ref t, ref i, ref dt, ref v) => {
+                            let const_ident = format!("{}", i.value);
+                            println!("{}", bs.stmtKind);
+                            assert!(const_ident == test_cases[index].expected_ident, "Comment did not match: {} != {}", const_ident, test_cases[index].expected_ident);
                             index = index + 1;
                         },
                         _ => {

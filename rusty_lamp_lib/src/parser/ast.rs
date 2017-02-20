@@ -25,12 +25,19 @@ impl Statement {
 pub enum StatementKind {
     Noop,
     Import(Token, String),
-    Interface(Token, Identifier, Vec<InterfaceType>, BlockStatement),
-    Record(Token, Identifier, BlockStatement),
+    Interface(Token, Identifier, Vec<InterfaceType>, BlockStatement, Vec<DeriveType>),
+    Record(Token, Identifier, BlockStatement, Vec<DeriveType>),
     Enum(Token, Identifier, BlockStatement),
     EnumMember(Token, Identifier),
     RecordMember(Token, Identifier, DataTypeStatement),
     Comment(Token, String),
+    StringLiteral(Token, String),
+    NumberLiteral(Token, String),
+    Boolean(Token, bool),
+    Block(BlockStatement),
+    Const(Token, Identifier, DataTypeStatement, Arc<Statement>),
+    Definition(Identifier, Arc<Statement>),
+    Ident(Token, String),
     Function(Token, FunctionModifier, Identifier, Vec<Parameter>, DataTypeStatement)
 }
 
@@ -43,7 +50,7 @@ impl fmt::Display for StatementKind {
             StatementKind::Import(ref t, ref s) => {
                 format!("@import {}", s)
             },
-            StatementKind::Interface(ref t, ref i, ref it, ref b) => {
+            StatementKind::Interface(ref t, ref i, ref it, ref b, ref d) => {
                 let mut result = String::new();
 
                 let mut interface_types = Vec::new();
@@ -59,7 +66,7 @@ impl fmt::Display for StatementKind {
 
                 result
             },
-            StatementKind::Record(ref t, ref i, ref b) => {
+            StatementKind::Record(ref t, ref i, ref b, ref d) => {
                 let mut result = String::new();
 
                 result.push_str(format!("{} = record {{", i).as_str());
@@ -98,8 +105,33 @@ impl fmt::Display for StatementKind {
 
                 result
             },
+            StatementKind::Const(ref t, ref i, ref dt, ref v) => {
+                let mut result = String::new();
+
+                result.push_str(format!("const {}: {} = {};", i, dt, v.stmtKind).as_str());
+
+                result
+            },
             StatementKind::Comment(ref t, ref s) => {
                 format!("#{}", s)
+            },
+            StatementKind::Boolean(ref t, ref b) => {
+                format!("{}", b)
+            },
+            StatementKind::NumberLiteral(ref t, ref s) => {
+                format!("{}", s)
+            },
+            StatementKind::StringLiteral(ref t, ref s) => {
+                format!("\"{}\"", s)
+            },
+            StatementKind::Ident(ref t, ref s) => {
+                format!("{}", s)
+            },
+            StatementKind::Definition(ref i, ref s) => {
+                format!("{} = {},", i, s.stmtKind)
+            },
+            StatementKind::Block(ref bs) => {
+                format!("{{ {} }}", bs)
             }
         };
 
@@ -117,6 +149,25 @@ impl fmt::Display for Parameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let result = format!("({}: {})", self.ident, self.data_type);
         write!(f, "{}", result)
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Hash)]
+pub enum DeriveType {
+    None,
+    Ord,
+    Eq
+}
+
+impl fmt::Display for DeriveType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            DeriveType::None => "",
+            DeriveType::Ord => "ord",
+            DeriveType::Eq => "eq"
+        };
+
+        write!(f, "{}", printable)
     }
 }
 

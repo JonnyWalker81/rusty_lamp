@@ -19,18 +19,17 @@ my_record = record {
     # Comments can also be put here
 
     # Constants can be included
-    # const string_const: string = "Constants can be put here";
-    # const min_value: another_record = {
-    #     key1 = 0,
-    #     key2 = ""
-    # };
+    const string_const: string = "Constants can be put here";
+    const min_value: another_record = {
+        key1 = 0,
+        key2 = ""
+    };
 }
 
 another_record = record {
     key1: i32;
     key2: string;
-}
-# deriving (eq, ord)
+} deriving (eq, ord)
 
 # This interface will be implemented in C++ and can be called from any language.
 my_cpp_interface = interface +c {

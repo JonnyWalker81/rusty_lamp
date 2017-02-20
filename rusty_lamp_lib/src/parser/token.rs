@@ -55,6 +55,7 @@ pub enum Token {
     Gt,
     Equal,
     StringToken(String),
+    Number(String),
     Type(DataType, String),
     True,
     False,
@@ -64,6 +65,9 @@ pub enum Token {
     CppInterface,
     Static,
     Const,
+    Dervive,
+    Eq,
+    Ord,
 }
 
 impl Token {
@@ -109,6 +113,10 @@ impl fmt::Display for Token {
             Token::CppInterface => "+c".into(),
             Token::Static => "static".into(),
             Token::Const => "const".into(),
+            Token::Dervive => "deriving".into(),
+            Token::Number(ref s) => format!("{}", s),
+            Token::Eq => "eq".into(),
+            Token::Ord => "ord".into(),
         };
 
         write!(f, "{}", printable)
