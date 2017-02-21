@@ -7,7 +7,8 @@ use std::io::Write;
 
 use parser::parser::Parser;
 use parser::lexer::Lexer;
-use parser::ast::{Statement, StatementKind, BlockStatement, FunctionModifier, DeriveType };
+use parser::ast::{Statement, StatementKind, BlockStatement,
+                  FunctionModifier, DeriveType, DataTypeStatement };
 
 pub struct LampFmt<'a> {
     input: String,
@@ -72,6 +73,12 @@ impl<'a> LampFmt<'a> {
             },
             StatementKind::StringLiteral(..) => {
                 self.print_string_literal(stmt_kind, indent);
+            },
+            StatementKind::NumberLiteral(..) => {
+                self.print_number_literal(stmt_kind, indent);
+            },
+            StatementKind::Boolean(..) => {
+                self.print_boolean(stmt_kind, indent);
             },
             StatementKind::Block(..) => {
                 self.print_block(stmt_kind, indent);
@@ -161,10 +168,21 @@ impl<'a> LampFmt<'a> {
                 if !first {
                     write!(self.output, ", ");
                 }
+
                 write!(self.output, "{}: {}", param.ident, param.data_type);
                 first = false;
             }
-            writeln!(self.output, "): {}", dt);
+
+            match *dt {
+                DataTypeStatement::None => {
+                    write!(self.output, ")");
+                },
+                _ => {
+                    write!(self.output, "): {}", dt);
+                }
+            }
+
+            writeln!(self.output, ";");
         }
     }
 
@@ -194,6 +212,18 @@ impl<'a> LampFmt<'a> {
     fn print_string_literal(&mut self, stmt_kind: &StatementKind, indent: i32) {
         if let StatementKind::StringLiteral(_, ref s) = *stmt_kind {
             write!(self.output, "\"{}\"", s);
+        }
+    }
+
+    fn print_number_literal(&mut self, stmt_kind: &StatementKind, indent: i32) {
+        if let StatementKind::NumberLiteral(_, ref s) = *stmt_kind {
+            write!(self.output, "{}", s);
+        }
+    }
+
+    fn print_boolean(&mut self, stmt_kind: &StatementKind, indent: i32) {
+        if let StatementKind::Boolean(_, ref b) = *stmt_kind {
+            write!(self.output, "{}", b);
         }
     }
 
