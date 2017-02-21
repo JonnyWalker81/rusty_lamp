@@ -1,4 +1,5 @@
 pub mod parser;
+pub mod generator;
 use parser::lexer::Lexer;
 use parser::parser::Parser;
 use parser::djinni_fmt::LampFmt;
