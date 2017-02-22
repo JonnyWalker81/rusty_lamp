@@ -19,23 +19,30 @@ fn main() {
                             (author: "Jonathan Rothberg")
                             (about: "Djinni implementation in Rust")
                             (@arg INPUT: "Input Djinni IDL file")
+                            (@arg FMT: --fmt "Format a Djinni file")
     ).get_matches();
 
     match matches.value_of("INPUT") {
         Some(i) => {
-            println!("{}", i);
-            let cwd = match env::var("PWD") {
-                Ok(c) => c,
-                Err(_) => String::new()
-            };
-            println!("Working Directory: {}", cwd);
+            match matches.occurrences_of("FMT") {
+                1 => {
+                    let cwd = match env::var("PWD") {
+                        Ok(c) => c,
+                        Err(_) => String::new()
+                    };
+                    println!("Working Directory: {}", cwd);
 
-            let mut file = File::open(i).unwrap();
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).unwrap();
-            let mut stdout = io::stdout();
+                    let mut file = File::open(i).unwrap();
+                    let mut contents = String::new();
+                    file.read_to_string(&mut contents).unwrap();
+                    let mut stdout = io::stdout();
 
-            rusty_lamp_lib::process(contents, &mut stdout);
+                    rusty_lamp_lib::process(contents, &mut stdout);
+                },
+                _ => {
+                    rusty_lamp_lib::compile(i.into());
+                }
+            }
         },
         None => {
             

@@ -5,7 +5,7 @@
 
 use std::io::Write;
 
-use parser::parser::Parser;
+use parser::parser::{ Parser, ParserOptions };
 use parser::lexer::Lexer;
 use parser::ast::{Statement, StatementKind, BlockStatement,
                   FunctionModifier, DeriveType, DataTypeStatement };
@@ -25,7 +25,10 @@ impl<'a> LampFmt<'a> {
 
     pub fn fmt(&'a mut self) {
         let lexer = Lexer::new(self.input.clone());
-        let mut parser = Parser::new(lexer);
+        let parser_options = ParserOptions {
+            process_imports: false
+        };
+        let mut parser = Parser::new_with_options(lexer, parser_options);
         let program = parser.parse_program().unwrap_or_default();
 
         let indent = 0;

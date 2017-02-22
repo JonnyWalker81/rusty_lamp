@@ -11,12 +11,28 @@ use parser::ast::{BlockStatement, Statement, StatementKind,
 use parser::program::Program;
 use std::fmt;
 use std::sync::Arc;
+use std::default::Default;
+use parse_file;
+
+pub struct ParserOptions {
+    pub process_imports: bool
+}
+
+impl Default for ParserOptions {
+    fn default() -> ParserOptions {
+        return ParserOptions {
+            process_imports: true
+        }
+    }
+}
 
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
     peek_token: Token,
-    errors: Vec<String>
+    errors: Vec<String>,
+    options: ParserOptions,
+    program: Program
 }
 
 impl Parser {
@@ -25,13 +41,34 @@ impl Parser {
             lexer: lexer,
             cur_token: Token::Illegal,
             peek_token: Token::Illegal,
-            errors: Vec::new()
+            errors: Vec::new(),
+            options: ParserOptions::default(),
+            program: Program::new()
         };
 
-        p.next_token();
-        p.next_token();
+        p.init();
 
         p
+    }
+
+    pub fn new_with_options(lexer: Lexer, options: ParserOptions) -> Parser {
+        let mut p = Parser {
+            lexer: lexer,
+            cur_token: Token::Illegal,
+            peek_token: Token::Illegal,
+            errors: Vec::new(),
+            options: options,
+            program: Program::new()
+        };
+
+        p.init();
+        
+        p
+    }
+
+    fn init(&mut self) {
+        self.next_token();
+        self.next_token();
     }
 
     fn next_token(&mut self) {
@@ -40,14 +77,14 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> Option<Program> {
-        let mut program = Program::new();
+        // let mut program = Program::new();
 
         // self.print_tokens();
         while !self.cur_token_is(Token::Eof) {
             let stmt = self.parse_statement();
             match stmt {
                 Some(s) => {
-                    program.statements.push(s);
+                    self.program.statements.push(s);
                 },
                 None => {
                     
@@ -56,7 +93,8 @@ impl Parser {
 
             self.next_token();
         }
-        return Some(program);
+
+        return Some(self.program.clone());
     }
 
     fn print_tokens(&mut self) {
@@ -114,6 +152,10 @@ impl Parser {
                     }
                 };
 
+                if self.options.process_imports {
+                    self.process_import(&literal);
+                }
+
                 return Some(Statement {
                     stmtKind: StatementKind::Import(import_tok, literal)
                 })
@@ -121,6 +163,12 @@ impl Parser {
         }
 
         return None;
+    }
+
+    fn process_import(&mut self, import_file: &String) {
+        let program = parse_file(import_file.clone());
+
+        self.program.statements.append(&mut program.statements.clone());
     }
 
     fn build_block_statements(&mut self) -> Option<Statement> {
@@ -329,7 +377,7 @@ impl Parser {
         
         let mut block_statements = Vec::new();
         while !self.cur_token_is(Token::RBrace) {
-            println!("cur_tok: {}", self.cur_token);
+            // println!("cur_tok: {}", self.cur_token);
             let ident = self.cur_token.clone();
 
             if !self.expect_peek(Token::Equal) {
@@ -535,11 +583,11 @@ impl Parser {
         let derived = if self.peek_token_is(Token::Dervive) {
             self.next_token();
 
-            println!("{}", self.peek_token);
+            // println!("{}", self.peek_token);
             if self.expect_peek(Token::LParen) {
                 let mut derives = Vec::new();
                 self.next_token();
-                println!("next token: {}", self.cur_token);
+                // println!("next token: {}", self.cur_token);
 
                 while !self.cur_token_is(Token::RParen) {
                     match self.cur_token {

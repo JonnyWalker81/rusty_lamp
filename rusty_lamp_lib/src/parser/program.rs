@@ -7,6 +7,7 @@ use parser::token::Token;
 use std::vec::Vec;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct Program {
     pub statements: Vec<Statement>
 }

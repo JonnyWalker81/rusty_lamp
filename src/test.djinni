@@ -1,4 +1,4 @@
-@import "dep.djinni"
+@import "deps.djinni"
 
 # Multi-line comments can be added here. This comment will be propagated
 # to each generated definition.

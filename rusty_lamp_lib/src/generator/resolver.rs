@@ -7,7 +7,6 @@ use parser::ast::{BlockStatement, Statement, StatementKind};
 use parser::program::Program;
 
 pub struct Resolver {
-    pub program: Program
 }
 
 #[derive(Debug)]
@@ -16,13 +15,12 @@ pub enum ResolveError {
 }
 
 impl Resolver {
-    pub fn new(program: Program) -> Resolver {
+    pub fn new() -> Resolver {
         Resolver {
-            program: program
         }
     }
 
-    pub fn resolve() -> Result<(), ResolveError> {
-        return Ok();
+    pub fn resolve(&mut self, program: &Program) -> Result<(), ResolveError> {
+        return Ok(());
     }
 }
