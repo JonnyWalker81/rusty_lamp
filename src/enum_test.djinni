@@ -1,0 +1,11 @@
+record_test = enum {
+   option1;
+   option2;
+   option3;
+}
+
+record_dup = enum {
+   option1;
+   option2;
+   option1;
+}

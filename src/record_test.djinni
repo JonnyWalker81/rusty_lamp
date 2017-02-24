@@ -1,0 +1,11 @@
+record_test = record {
+   one: i32;
+   two: f32;
+   three: string;
+}
+
+record_dup = record {
+   one: list<string>;
+   one: set<i32>;
+   two: f64;
+}

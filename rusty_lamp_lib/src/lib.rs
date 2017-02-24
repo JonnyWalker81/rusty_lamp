@@ -34,7 +34,13 @@ pub fn compile(main_file: String) {
 
     println!("Resolving...");
     let mut resolver = Resolver::new();
-    resolver.resolve(&program);
+    let result = resolver.resolve(&program);
+    match result {
+        Err(err) => {
+            println!("Error: {:?}", err);
+        },
+        _ => {}
+    }
 }
 
 fn parse_file(file: String) -> Program {
