@@ -9,14 +9,12 @@ use generator::resolver::ResolveError;
 
 pub struct Typer {
     table: HashMap<String, Statement>,
-    identifiers: HashSet<String>
 }
 
 impl Typer {
     pub fn new() -> Typer {
         let mut t = Typer {
             table: HashMap::new(),
-            identifiers: HashSet::new()
         };
 
         t.populate_builtin_types();
@@ -28,25 +26,34 @@ impl Typer {
     }
 
     pub fn insert_type(&mut self, key: &String, stmt: &Statement) -> Result<(), ResolveError> {
-        if self.identifiers.contains(key) {
-            return Err(ResolveError::Duplicate(format!("Type already defined: {}", key)));
-        }
-
-        self.identifiers.insert(key.clone());
         self.table.insert(key.clone(), stmt.clone());
         return Ok(());
     }
 
     pub fn type_exists(&self, key: &String) -> bool {
-        return self.identifiers.contains(key);
+        return self.table.contains_key(key);
+    }
+}
+
+pub struct DuplicateChecker {
+    identifiers: HashSet<String>,
+    label: String
+}
+
+impl DuplicateChecker {
+    pub fn new(label: String) -> DuplicateChecker {
+        DuplicateChecker {
+            identifiers: HashSet::new(),
+            label: label
+        }
     }
 
-    pub fn dup_check(&mut self, key: &String) -> Result<(), ResolveError>  {
-        if self.identifiers.contains(key) {
-            return Err(ResolveError::Duplicate(format!("Type already defined: {}", key)));
+    pub fn check(&mut self, ident: &String) -> Result<(), ResolveError> {
+        if self.identifiers.contains(ident) {
+            return Err(ResolveError::Duplicate(self.label.clone(), format!("Type already defined: {}", ident.clone())));
         }
 
-        self.identifiers.insert(key.clone());
+        self.identifiers.insert(ident.clone());
         Ok(())
     }
 }

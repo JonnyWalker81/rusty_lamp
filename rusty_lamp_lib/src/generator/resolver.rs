@@ -5,7 +5,7 @@
 
 use parser::ast::{BlockStatement, Statement, StatementKind};
 use parser::program::Program;
-use generator::typer::Typer;
+use generator::typer::{ Typer, DuplicateChecker };
 
 pub struct Resolver {
     typer: Typer
@@ -14,7 +14,7 @@ pub struct Resolver {
 #[derive(Debug)]
 pub enum ResolveError {
     Resolve(String),
-    Duplicate(String),
+    Duplicate(String, String),
     ExpectedEnumOption,
 }
 
@@ -50,11 +50,11 @@ impl Resolver {
 
     fn resolve_enum(&mut self, stmt: &Statement) -> Result<(), ResolveError> {
         if let StatementKind::Enum(_, _, ref b) = stmt.stmtKind {
-            let mut typer = Typer::new();
+            let mut dup_checker = DuplicateChecker::new("Enum".into());
             for s in &b.statements {
                 match s.stmtKind {
                     StatementKind::EnumMember(_, ref i) => {
-                        typer.dup_check(&i.value)?
+                        dup_checker.check(&i.value)?
                     },
                     _ => {
                         return Err(ResolveError::ExpectedEnumOption);
@@ -68,11 +68,11 @@ impl Resolver {
 
     fn resolve_record(&mut self, stmt: &Statement) -> Result<(), ResolveError> {
         if let StatementKind::Record(_, _, ref b, ref dt) = stmt.stmtKind {
-            let mut typer = Typer::new();
+            let mut dup_checker = DuplicateChecker::new("Record".into());
             for s in &b.statements {
                 match s.stmtKind {
                     StatementKind::RecordMember(_, ref i, ref dts) => {
-                        typer.dup_check(&i.value)?
+                        dup_checker.check(&i.value)?
                     },
                     _ => {
                         return Err(ResolveError::ExpectedEnumOption);
