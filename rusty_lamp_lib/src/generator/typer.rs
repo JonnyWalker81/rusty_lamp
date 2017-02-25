@@ -16,6 +16,7 @@ pub struct TypeDefinition {
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub enum TypeDefinitionKind {
+    None,
     Primitive(String, String, String, String, String, String, String, String),
     String,
     Binary,
@@ -30,6 +31,7 @@ pub enum TypeDefinitionKind {
 impl fmt::Display for TypeDefinitionKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
+            TypeDefinitionKind::None => "none".into(),
             TypeDefinitionKind::Primitive(ref n, ..) => {
                 format!("{}", n)
             },
@@ -61,8 +63,6 @@ impl fmt::Display for TypeDefinitionKind {
 
         write!(f, "{}", printable)
     }
-
-    
 }
 
 impl TypeDefinitionKind {
@@ -91,16 +91,38 @@ impl Typer {
     }
 
     fn populate_builtin_types(&mut self) {
-        // self.table.insert("i8", TypeDefinitionKind::Primitive("i8".into(), ));
+        self.table.insert("i8".into(), TypeDefinitionKind::Primitive("i8".into(), "byte".into(), "jbyte".into(), "int8_t".into(), "Byte".into(), "B".into(), "int8_t".into(), "NSNumber".into()));
+        self.table.insert("i16".into(), TypeDefinitionKind::Primitive("i16".into(), "short".into(), "short".into(), "int16_6".into(), "Short".into(), "S".into(), "int16_t".into(), "NSNumber".into()));
+        self.table.insert("i32".into(), TypeDefinitionKind::Primitive("i32".into(), "int".into(), "jint".into(), "int32_t".into(), "Integer".into(), "I".into(), "int32_t".into(), "NSNumber".into()));
+        self.table.insert("i64".into(), TypeDefinitionKind::Primitive("i64".into(), "long".into(), "jlong".into(), "int64_t".into(), "Long".into(), "J".into(), "int64_t".into(), "NSNumber".into()));
+        self.table.insert("f32".into(), TypeDefinitionKind::Primitive("f32".into(), "float".into(), "jfloat".into(), "float".into(), "Float".into(), "F".into(), "float".into(), "NSNumber".into()));
+        self.table.insert("f64".into(), TypeDefinitionKind::Primitive("f64".into(), "double".into(), "jdouble".into(), "double".into(), "Double".into(), "D".into(), "double".into(), "NSNumber".into()));
+        self.table.insert("bool".into(), TypeDefinitionKind::Primitive("bool".into(), "boolean".into(), "jboolean".into(), "bool".into(), "Boolean".into(), "Z".into(), "BOOL".into(), "NSNumber".into()));
+        self.table.insert("string".into(), TypeDefinitionKind::String);
+        self.table.insert("binary".into(), TypeDefinitionKind::Binary);
+        self.table.insert("optional".into(), TypeDefinitionKind::Optional);
+        self.table.insert("date".into(), TypeDefinitionKind::Date);
+        self.table.insert("list".into(), TypeDefinitionKind::List);
+        self.table.insert("set".into(), TypeDefinitionKind::Set);
+        self.table.insert("map".into(), TypeDefinitionKind::Map);
     }
 
-    pub fn insert_type(&mut self, key: &String, td: &TypeDefinitionKind) -> Result<(), ResolveError> {
+    pub fn insert_type(&mut self, key: &String, td: TypeDefinitionKind) -> Result<(), ResolveError> {
         self.table.insert(key.clone(), td.clone());
         return Ok(());
     }
 
-    pub fn type_exists(&self, key: &String) -> bool {
-        return self.table.contains_key(key);
+    pub fn get(&self, key: &String) -> TypeDefinitionKind {
+        match self.table.get(key) {
+            Some(e) => e.clone(),
+            None => TypeDefinitionKind::None
+        }
+    }
+
+    pub fn dump(&self) {
+        for (key, value) in &self.table {
+            println!("{} -> {}", key, value);
+        }
     }
 }
 
