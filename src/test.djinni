@@ -8,11 +8,11 @@ my_enum = enum {
     option3;
 }
 
-my_enum = enum {
-   value1;
-   value2;
-   value3;
-}
+# my_enum = enum {
+#    value1;
+#    value2;
+#    value3;
+# }
 
 my_record = record {
     id: i32;

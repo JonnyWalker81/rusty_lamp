@@ -16,6 +16,7 @@ pub enum ResolveError {
     Resolve(String),
     Duplicate(String, String),
     ExpectedEnumOption,
+    TypeNotFound(String),
 }
 
 impl Resolver {
@@ -31,8 +32,20 @@ impl Resolver {
             self.resolve_statement(&stmt, &mut dup_checker)?
         }
 
-        self.typer.dump();
+        // self.typer.dump();
         return Ok(());
+    }
+
+    fn type_check(&self, ty: &String) -> Result<(),  ResolveError> {
+        match ty.as_str() {
+            "none" => Ok(()),
+            _ => {
+                match self.typer.get(ty) {
+                    TypeDefinitionKind::None => Err(ResolveError::TypeNotFound(ty.clone())),
+                    _ => Ok(())
+                }
+            }
+        }
     }
 
     fn resolve_statement(&mut self, stmt: &Statement, dup_checker: &mut DuplicateChecker) -> Result<(), ResolveError> {
@@ -84,6 +97,7 @@ impl Resolver {
                 match s.stmtKind {
                     StatementKind::RecordMember(_, ref i, ref dts) => {
                         dup_checker.check(&i.value)?;
+                        self.type_check(&dts.get_name())?;
                     },
                     _ => {
                         // return Err(ResolveError::ExpectedEnumOption);
@@ -103,6 +117,7 @@ impl Resolver {
                 match s.stmtKind {
                     StatementKind::Function(_, ref fm, ref i, ref p, ref dts) => {
                         dup_checker.check(&i.value)?;
+                        self.type_check(&dts.get_name())?;
                     },
                     _ => {
                         // return Err(ResolveError::ExpectedEnumOption);

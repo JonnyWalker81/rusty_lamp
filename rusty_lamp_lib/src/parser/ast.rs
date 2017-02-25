@@ -252,6 +252,26 @@ impl DataTypeStatement {
             _ => DataTypeStatement::None
         }
     }
+
+    pub fn get_name(&self) -> String {
+        match *self {
+            DataTypeStatement::None => "none".into(),
+            DataTypeStatement::String => "string".into(),
+            DataTypeStatement::Integer8 => "i8".into(),
+            DataTypeStatement::Integer16 => "i16".into(),
+            DataTypeStatement::Integer32 => "i32".into(),
+            DataTypeStatement::Integer64 => "i64".into(),
+            DataTypeStatement::Float32 => "f32".into(),
+            DataTypeStatement::Float64 => "f64".into(),
+            DataTypeStatement::Binary => "binary".into(),
+            DataTypeStatement::Date => "date".into(),
+            DataTypeStatement::Bool => "bool".into(),
+            DataTypeStatement::Set(..) => "set".into(),
+            DataTypeStatement::List(..) => "list".into(),
+            DataTypeStatement::Map(..) => "map".into(),
+            DataTypeStatement::Object(ref i) => format!("{}", i.value)
+        }
+    }
 }
 
 impl fmt::Display for DataTypeStatement {

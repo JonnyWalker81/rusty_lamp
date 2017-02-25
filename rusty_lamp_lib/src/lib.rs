@@ -39,8 +39,11 @@ pub fn compile(main_file: String) {
         Err(err) => {
             println!("Error: {:?}", err);
         },
-        _ => {}
+        _ => {
+            println!("Generating...");
+        }
     }
+
 }
 
 fn parse_file(file: String) -> Program {
