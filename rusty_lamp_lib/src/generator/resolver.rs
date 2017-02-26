@@ -118,6 +118,10 @@ impl Resolver {
                     StatementKind::Function(_, ref fm, ref i, ref p, ref dts) => {
                         dup_checker.check(&i.value)?;
                         self.type_check(&dts.get_name())?;
+
+                        for param in p {
+                            self.type_check(&param.data_type.get_name())?;
+                        }
                     },
                     _ => {
                         // return Err(ResolveError::ExpectedEnumOption);

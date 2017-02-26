@@ -12,6 +12,6 @@ client_2_interface = interface +j +o {
 	# identifier_check(data: binary, r: i32, jret: i64): f64;
     return_str(): string;
 
-    meth_taking_interface(i: client_interface): string;
+    meth_taking_interface(i: client_2_interface): string;
     # meth_taking_optional_interface(i: optional<client_interface>): string;
 }
