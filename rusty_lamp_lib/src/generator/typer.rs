@@ -66,15 +66,25 @@ impl fmt::Display for TypeDefinitionKind {
 }
 
 impl TypeDefinitionKind {
-    fn num_params(&self) -> i8 {
+    pub fn num_params(&self) -> i8 {
         match *self {
             TypeDefinitionKind::Map => 2,
             TypeDefinitionKind::List | TypeDefinitionKind::Set | TypeDefinitionKind::Optional => 1,
             _ => 0
         }
     }
+
+    // pub fn get_type_definition(&self, dts: &DataTypeStatement) -> &TypeDefinitionKind {
+    //     match *dts {
+    //         DataTypeStatement::Map(..) =>,
+    //         DataTypeStatement::Set(..) => TypeDefinitionKind::Set,
+    //         DataTypeStatement::List(..) => TypeDefinitionKind::List,
+    //         DataTypeStatement::
+    //     }
+    // }
 }
 
+#[derive(Clone)]
 pub struct Typer {
     table: HashMap<String, TypeDefinitionKind>,
 }
@@ -115,6 +125,13 @@ impl Typer {
     pub fn get(&self, key: &String) -> TypeDefinitionKind {
         match self.table.get(key) {
             Some(e) => e.clone(),
+            None => TypeDefinitionKind::None
+        }
+    }
+
+    pub fn get_from_data_type(&self, dts: &DataTypeStatement) -> TypeDefinitionKind {
+        match self.table.get(&dts.get_name()) {
+            Some(t) => t.clone(),
             None => TypeDefinitionKind::None
         }
     }

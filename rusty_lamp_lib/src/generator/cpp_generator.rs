@@ -6,13 +6,31 @@
 use std::sync::Arc;
 use std::io::{Write, BufWriter};
 use std::fs::{File};
+use std::collections::{HashSet};
 use generator::generator::{Generate};
 use generator::spec::Spec;
+use generator::cpp_marshaler::CppMarshaler;
 use parser::program::Program;
 use parser::ast::{StatementKind};
 
 pub struct CppGenerator {
     
+}
+
+struct CppRefs {
+    hpp_includes: HashSet<String>,
+    hpp_fwds: HashSet<String>,
+    cpp_includes: HashSet<String>
+}
+
+impl CppRefs {
+    fn new() -> CppRefs {
+        CppRefs {
+            hpp_includes: HashSet::new(),
+            hpp_fwds: HashSet::new(),
+            cpp_includes: HashSet::new()
+        }
+    }
 }
 
 impl CppGenerator {
@@ -30,7 +48,7 @@ impl CppGenerator {
     }
 
     fn wrap_with_namespace<F>(&self, w: &mut Write, block: F) where F: Fn(&mut Write)  {
-        writeln!(w, "namespace_gen {{");
+        writeln!(w, "namespace namespace_gen {{");
         block(w);
         writeln!(w, "}}");
     }
@@ -61,17 +79,36 @@ impl Generate for CppGenerator {
 
     fn write_record(&self, r: &StatementKind, spec: &Spec) {
         if let StatementKind::Record(_, ref i, ref bs, ref dt) = *r {
+            let marshaler = CppMarshaler::new();
             println!("Generating Record: {}", i.value);
             let mut w = self.make_writer(spec, &i.value);
 
-            self.write_header(&mut w);
+            let mut cpp_refs = CppRefs::new();
 
+            for stmt in &bs.statements {
+                match stmt.stmtKind {
+                    StatementKind::RecordMember(_, ref id, ref dts) => {
+                        cpp_refs.hpp_includes.insert(marshaler.include(dts));
+                    },
+                    _ => {}
+                }
+            }
+
+            self.write_header(&mut w);
+            for i in cpp_refs.hpp_includes {
+                if i.len() > 0 {
+                    writeln!(w, "#include {}", i);
+                }
+            }
+
+            writeln!(w, "");
             self.wrap_with_namespace(&mut w, |w| {
                 writeln!(w, "struct {} {{", i.value);
                 for f in &bs.statements {
                     match f.stmtKind {
                         StatementKind::RecordMember(_, ref id, ref dts) => {
-                            writeln!(w, "{} {};", dts, id.value);
+                            let t = spec.typer.get(&dts.get_name());
+                            writeln!(w, "{} {};", marshaler.get_type_name(t), id.value);
                         },
                         _ => {}
                     }

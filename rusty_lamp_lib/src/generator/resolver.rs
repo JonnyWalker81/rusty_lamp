@@ -26,14 +26,14 @@ impl Resolver {
         }
     }
 
-    pub fn resolve(&mut self, program: &Program) -> Result<(), ResolveError> {
+    pub fn resolve(&mut self, program: &Program) -> Result<Typer, ResolveError> {
         let mut dup_checker = DuplicateChecker::new("Top Level".into());
         for stmt in &program.statements {
             self.resolve_statement(&stmt, &mut dup_checker)?
         }
 
         // self.typer.dump();
-        return Ok(());
+        return Ok((self.typer.clone()));
     }
 
     fn type_check(&self, ty: &String) -> Result<(),  ResolveError> {

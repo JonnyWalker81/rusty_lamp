@@ -4,21 +4,40 @@
  */
 
 use parser::token::{Token, DataType};
+use generator::typer::{TypeDefinitionKind};
 use std::fmt;
 use std::sync::Arc;
 // use std::fmt::write;
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub struct Statement {
-    pub stmtKind: StatementKind
+    pub stmtKind: StatementKind,
+    // pub resolved: TypeDefinitionKind
+}
+
+impl Default for Statement {
+    fn default() -> Statement {
+        Statement {
+            stmtKind: StatementKind::Noop,
+            // resolved: TypeDefinitionKind::None
+        }
+    }
 }
 
 impl Statement {
     pub fn new() -> Statement {
         Statement {
-            stmtKind: StatementKind::Noop
+            stmtKind: StatementKind::Noop,
+            // resolved: TypeDefinitionKind::None
         }
     }
+
+    // pub fn new(stmt_kind: StatementKind) -> Statement {
+    //     Statement {
+    //         stmtKind: stmt_kind,
+    //         resolved: TypeDefinitionKind::None
+    //     }
+    // }
 }
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]

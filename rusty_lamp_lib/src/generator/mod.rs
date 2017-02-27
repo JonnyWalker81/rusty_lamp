@@ -6,3 +6,4 @@ pub mod java_generator;
 pub mod jni_generator;
 pub mod objc_generator;
 pub mod spec;
+pub mod cpp_marshaler;

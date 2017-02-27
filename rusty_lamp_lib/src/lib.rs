@@ -46,9 +46,9 @@ pub fn compile(main_file: String) {
         Err(err) => {
             println!("Error: {:?}", err);
         },
-        _ => {
+        Ok(typer) => {
             println!("Generating...");
-            let spec = Spec::new("generated-src".into(), "cpp".into());
+            let spec = Spec::new("generated-src".into(), "cpp".into(), typer);
             setup_directories(&spec);
             let mut cpp_generator = Generator::new(CppGenerator::new());
             cpp_generator.generate(&spec, &program);
