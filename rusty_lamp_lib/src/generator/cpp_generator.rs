@@ -50,7 +50,7 @@ impl CppGenerator {
     fn wrap_with_namespace<F>(&self, w: &mut Write, block: F) where F: Fn(&mut Write)  {
         writeln!(w, "namespace namespace_gen {{");
         block(w);
-        writeln!(w, "}}");
+        writeln!(w, "}} // namespace_gen");
     }
 }
 
@@ -61,17 +61,31 @@ impl Generate for CppGenerator {
             let mut w = self.make_writer(spec, &i.value);
             self.write_header(&mut w);
 
+            let mut cpp_refs = CppRefs::new();
+            cpp_refs.hpp_includes.insert("#include <functional>".into());
+            
+            cpp_refs.hpp_includes.iter().map(|inc| {
+                println!("here");
+                if inc.len() > 0 {
+                    writeln!(w, "#include {}", i);
+                }
+            });
+            // for i in cpp_refs.hpp_includes {
+            //     if i.len() > 0 {
+            //         writeln!(w, "#include {}", i);
+            //     }
+            // }
             self.wrap_with_namespace(&mut w, |w| {
-                writeln!(w, "enum {}", i.value);
+                writeln!(w, "enum class {} : int {{", i.value);
                 for o in &b.statements {
                     match o.stmtKind {
                         StatementKind::EnumMember(_, ref oi) => {
-                            writeln!(w, "{};", oi.value);
+                            writeln!(w, "{},", oi.value);
                         },
                         _ => {}
                     }
                 }
-                writeln!(w, "}}");
+                writeln!(w, "}};");
             });
             
         }
@@ -88,7 +102,7 @@ impl Generate for CppGenerator {
             for stmt in &bs.statements {
                 match stmt.stmtKind {
                     StatementKind::RecordMember(_, ref id, ref dts) => {
-                        cpp_refs.hpp_includes.insert(marshaler.include(dts));
+                        cpp_refs.hpp_includes.insert(format!("#include {}", marshaler.include(dts)));
                     },
                     _ => {}
                 }
@@ -97,7 +111,7 @@ impl Generate for CppGenerator {
             self.write_header(&mut w);
             for i in cpp_refs.hpp_includes {
                 if i.len() > 0 {
-                    writeln!(w, "#include {}", i);
+                    writeln!(w, "{}", i);
                 }
             }
 

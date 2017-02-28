@@ -1,0 +1,3 @@
+@import "enum_test.djinni"
+@import "record_test.djinni"
+

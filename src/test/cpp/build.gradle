@@ -1,0 +1,73 @@
+apply plugin: 'cpp'
+apply plugin: 'c'
+
+model {
+    buildTypes {
+        debug
+        release
+    }
+
+    platforms {
+        // Note: Neither Clang no gcc support ia-64
+        x86 {
+            architecture "x86"
+        }
+        x64 {
+            architecture "x86_64"
+        }
+    }
+
+    components {
+      test(NativeExecutableSpec) {
+        sources {
+          cpp {
+            source {
+              srcDirs "./",
+              "../generated-src/cpp"
+              include "**/*.cpp"
+            }
+            exportedHeaders {
+              srcDirs "./",
+              "../generated-src/cpp"
+              include "**/*.hpp", "**/*.h"
+            }
+          }
+        }
+        binaries.all {
+          cppCompiler.args "-std=c++1z", "-stdlib=libc++", "-fexceptions", "-frtti"
+          if (buildType == buildTypes.debug) {
+            cppCompiler.args "-g", "-O0", "-fprofile-instr-generate", "-fcoverage-mapping", "-fpermissive"
+            linker.args "-fprofile-instr-generate", "-fcoverage-mapping", "-v"
+          } else if (buildType == buildTypes.release) {
+              cppCompiler.args "-O2"
+          }
+        }
+	   }
+  }
+}
+
+project.gradle.buildFinished { buildResult ->
+    if (buildResult.getFailure() != null) {
+        println "\r\nDid you forget to run get_deps.sh or run_djinni.sh?"
+    }
+}
+
+task copyTestResults(type: Copy, overwrite: true) {
+    from "$buildDir/exe/test/debug/test_out.xml"
+    into 'test-reports/'
+}
+
+task test(type: Exec, dependsOn: build) {
+    workingDir "$buildDir/exe/test/debug/"
+    println "Running debug tests"
+    ignoreExitValue = true
+    commandLine "./test", "-r", "junit", "--out", "test_out.xml"
+    println "Copying test results"
+    copyTestResults
+}
+
+test.finalizedBy(copyTestResults)
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.10'
+}
