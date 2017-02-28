@@ -57,24 +57,24 @@ impl CppGenerator {
 impl Generate for CppGenerator {
     fn write_enum(&self, e: &StatementKind, spec: &Spec) {
         if let StatementKind::Enum(_, ref i, ref b) = *e {
-            println!("Generating Enum: {} {{", i.value);
+            println!("Generating Enum: {}", i.value);
             let mut w = self.make_writer(spec, &i.value);
             self.write_header(&mut w);
 
             let mut cpp_refs = CppRefs::new();
             cpp_refs.hpp_includes.insert("#include <functional>".into());
             
-            cpp_refs.hpp_includes.iter().map(|inc| {
-                println!("here");
-                if inc.len() > 0 {
-                    writeln!(w, "#include {}", i);
-                }
-            });
-            // for i in cpp_refs.hpp_includes {
-            //     if i.len() > 0 {
+            // cpp_refs.hpp_includes.iter().map(|inc| {
+            //     println!("here");
+            //     if inc.len() > 0 {
             //         writeln!(w, "#include {}", i);
             //     }
-            // }
+            // });
+            for i in cpp_refs.hpp_includes {
+                if i.len() > 0 {
+                    writeln!(w, "{}", i);
+                }
+            }
             self.wrap_with_namespace(&mut w, |w| {
                 writeln!(w, "enum class {} : int {{", i.value);
                 for o in &b.statements {
