@@ -47,10 +47,10 @@ impl CppGenerator {
         writeln!(w, "#pragma once");
     }
 
-    fn wrap_with_namespace<F>(&self, w: &mut Write, block: F) where F: Fn(&mut Write)  {
-        writeln!(w, "namespace namespace_gen {{");
+    fn wrap_with_namespace<F>(&self, w: &mut Write, ns: String, block: F) where F: Fn(&mut Write)  {
+        writeln!(w, "namespace {} {{", ns);
         block(w);
-        writeln!(w, "}} // namespace_gen");
+        writeln!(w, "}} // {}", ns);
     }
 }
 
@@ -64,27 +64,33 @@ impl Generate for CppGenerator {
             let mut cpp_refs = CppRefs::new();
             cpp_refs.hpp_includes.insert("#include <functional>".into());
             
-            // cpp_refs.hpp_includes.iter().map(|inc| {
-            //     println!("here");
-            //     if inc.len() > 0 {
-            //         writeln!(w, "#include {}", i);
-            //     }
-            // });
-            for i in cpp_refs.hpp_includes {
-                if i.len() > 0 {
-                    writeln!(w, "{}", i);
-                }
-            }
-            self.wrap_with_namespace(&mut w, |w| {
+            cpp_refs.hpp_includes.iter()
+                .filter(|x| x.len() > 0)
+                .inspect(|inc| writeln!(w, "{}", inc).unwrap_or_default())
+                .collect::<Vec<_>>();
+            
+            self.wrap_with_namespace(&mut w, "namespace_gen".into(), |w| {
                 writeln!(w, "enum class {} : int {{", i.value);
-                for o in &b.statements {
-                    match o.stmtKind {
-                        StatementKind::EnumMember(_, ref oi) => {
-                            writeln!(w, "{},", oi.value);
-                        },
-                        _ => {}
-                    }
-                }
+                b.statements
+                    .iter()
+                    .inspect(|o| {
+                        match o.stmtKind {
+                            StatementKind::EnumMember(_, ref oi) => {
+                                writeln!(w, "{},", oi.value);
+                            },
+                            _ => {}
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                writeln!(w, "}};");
+            });
+
+            self.wrap_with_namespace(&mut w, "std".into(), |w| {
+                writeln!(w, "template<>");
+                writeln!(w, "struct hash<::namespace_gen::{}> {{", i.value);
+                writeln!(w, "size_t operator()(::namespace_gen::{} type) const {{", i.value);
+                writeln!(w, "return std::hash<int>()(static_cast<int>(type));");
+                writeln!(w, "}}");
                 writeln!(w, "}};");
             });
             
@@ -99,24 +105,31 @@ impl Generate for CppGenerator {
 
             let mut cpp_refs = CppRefs::new();
 
-            for stmt in &bs.statements {
+            bs.statements
+                .iter()
+                .inspect(|stmt| {
                 match stmt.stmtKind {
                     StatementKind::RecordMember(_, ref id, ref dts) => {
-                        cpp_refs.hpp_includes.insert(format!("#include {}", marshaler.include(dts)));
+                        println!("{}", dts);
+                        let include = marshaler.include(dts);
+                        if include.len() > 0 {
+                            cpp_refs.hpp_includes.insert(format!("#include {}", include));
+                        }
                     },
                     _ => {}
                 }
-            }
+                })
+                .collect::<Vec<_>>();
 
             self.write_header(&mut w);
-            for i in cpp_refs.hpp_includes {
-                if i.len() > 0 {
-                    writeln!(w, "{}", i);
-                }
-            }
+            cpp_refs.hpp_includes
+                .iter()
+                .filter(|x| x.len() > 0)
+                .map(|inc| writeln!(w, "{}", inc))
+                .collect::<Vec<_>>();
 
             writeln!(w, "");
-            self.wrap_with_namespace(&mut w, |w| {
+            self.wrap_with_namespace(&mut w, "namespace_gen".into(), |w| {
                 writeln!(w, "struct {} {{", i.value);
                 for f in &bs.statements {
                     match f.stmtKind {
