@@ -8,7 +8,10 @@ use generator::typer::Typer;
 pub struct Spec {
     pub root: String,
     pub cpp_root: String,
-    pub typer: Typer
+    pub typer: Typer,
+    pub java_out_folder: Option<String>,
+    pub java_package: Option<String>,
+    pub java_class_access_modifier: String
 }
 
 impl Spec {
@@ -16,7 +19,10 @@ impl Spec {
         Spec{
             root: root,
             cpp_root: cpp_root,
-            typer: typer
+            typer: typer,
+            java_out_folder: None,
+            java_package: None,
+            java_class_access_modifier: "".into()
         }
     }
 }

@@ -20,9 +20,10 @@ pub enum ResolveError {
 }
 
 impl Resolver {
-    pub fn new() -> Resolver {
+    pub fn new(typer: Typer) -> Resolver {
         Resolver {
-            typer: Typer::new()
+            // typer: Typer::new()
+            typer: typer
         }
     }
 

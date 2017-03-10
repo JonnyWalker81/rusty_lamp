@@ -5,6 +5,8 @@ extern crate clap;
 
 use clap::{ App, Arg };
 use rusty_lamp_lib::parser;
+use rusty_lamp_lib::generator::spec::{Spec};
+use rusty_lamp_lib::generator::typer::{Typer};
 
 use std::env;
 use std::fs::File;
@@ -16,21 +18,24 @@ fn main() {
 
     let matches = App::new("rusty_lamp").about("Djinni implmentation in Rust")
         .author("Jonathan Rothberg")
-        .arg(Arg::with_name("IDL")
+        .arg(Arg::with_name("idl")
              .help("The IDF file with the type definitions, typically with extension \".djinni\".")
+             .long("idl")
              .takes_value(true)
              .required(true))
-        .arg(Arg::with_name("FMT")
+        .arg(Arg::with_name("fmt")
              .help("Format a Djinni file.")
-             .takes_value(true)
+             .long("fmt")
+             // .takes_value(true)
              .required(false))
         .arg(Arg::with_name("include-path")
              .help("An include path to search for Djinni @import directives. Can specify multiple paths.")
              .takes_value(true)
              .long("idl-include-path"))
-        .arg(Arg::with_name("java_out")
+        .arg(Arg::with_name("java-out")
              .help("The output for the Java files (Generator disabled if unspecified.)")
              .takes_value(true)
+             .default_value("")
              .long("java-out"))
         .arg(Arg::with_name("java-package")
              .help("The package name to use for generated Java classes.")
@@ -66,7 +71,7 @@ fn main() {
         .arg(Arg::with_name("cpp-out")
              .help("The output folder for C++ files (Generator disabled if unspecified).")
              .long("cpp-out")
-             .takes_value(true))
+             .default_value(""))
         .arg(Arg::with_name("cpp-header-out")
              .help("The output folder for C++ header files")
              .long("cpp-header-out")
@@ -123,7 +128,8 @@ fn main() {
         //JNI
         .arg(Arg::with_name("jni-out")
              .help("The folder for JNI C++ output files (Generator disabled if unspecified).")
-             .long("jni-out"))
+             .long("jni-out")
+             .default_value(""))
         .arg(Arg::with_name("jni-header-out")
              .help("The folder for JNI C++ header files.")
              .long("jni-header-out")
@@ -143,6 +149,7 @@ fn main() {
         //Objc
         .arg(Arg::with_name("objc-out")
              .help("The folder for Objective-C output files (Generator disabled if unspecified).")
+             .default_value("")
              .long("objc-out"))
         .arg(Arg::with_name("objc-h-ext")
              .help("The filename extension for Objective-C[++] header files.")
@@ -160,6 +167,7 @@ fn main() {
        //Objective-C++
         .arg(Arg::with_name("objcpp-out")
              .help("The output folder for private Objective-C files (Generator disabled if unspecified).")
+             .default_value("")
              .long("objcpp-out"))
         .arg(Arg::with_name("ojcpp-ext")
              .help("The filename extension for Objective-C++ files.")
@@ -217,7 +225,73 @@ fn main() {
         .arg(Arg::with_name("skip-generation")
              .help("Way of specifyiing if the file generation should be skipped.")
              .long("skip-generation")
-             .default_value("false")).get_matches();
+             .default_value("false"))
+
+       // Ident Style Flags
+        .arg(Arg::with_name("ident-java-enum")
+             .default_value("")
+             .long("ident-java-enum"))
+        .arg(Arg::with_name("ident-java-field")
+             .default_value("")
+             .long("ident-java-field"))
+        .arg(Arg::with_name("ident-java-type")
+             .default_value("")
+             .long("ident-java-type"))
+
+        .arg(Arg::with_name("ident-cpp-enum")
+             .default_value("")
+             .long("ident-cpp-enum"))
+        .arg(Arg::with_name("ident-cpp-field")
+             .default_value("")
+             .long("ident-cpp-field"))
+        .arg(Arg::with_name("ident-cpp-method")
+             .default_value("")
+             .long("ident-cpp-method"))
+        .arg(Arg::with_name("ident-cpp-type")
+             .default_value("")
+             .long("ident-cpp-type"))
+        .arg(Arg::with_name("ident-cpp-enum-type")
+             .default_value("")
+             .long("ident-cpp-enum-type"))
+        .arg(Arg::with_name("ident-cpp-type-param")
+             .default_value("")
+             .long("ident-cpp-type-param"))
+        .arg(Arg::with_name("ident-cpp-local")
+             .default_value("")
+             .long("ident-cpp-local"))
+        .arg(Arg::with_name("ident-cpp-file")
+             .default_value("")
+             .long("ident-cpp-file"))
+
+        .arg(Arg::with_name("ident-jni-class")
+             .long("ident-jni-class")
+             .default_value(""))
+        .arg(Arg::with_name("ident-jni-file")
+             .long("ident-jni-file")
+             .default_value(""))
+
+        .arg(Arg::with_name("ident-objc-enum")
+             .default_value("")
+             .long("ident-objc-enum"))
+        .arg(Arg::with_name("ident-objc-field")
+             .default_value("")
+             .long("ident-objc-field"))
+        .arg(Arg::with_name("ident-objc-method")
+             .default_value("")
+             .long("ident-objc-method"))
+        .arg(Arg::with_name("ident-objc-type")
+             .default_value("")
+             .long("ident-objc-type"))
+        .arg(Arg::with_name("ident-objc-type-param")
+             .default_value("")
+             .long("ident-objc-type-param"))
+        .arg(Arg::with_name("ident-objc-local")
+             .default_value("")
+             .long("ident-objc-local"))
+        .arg(Arg::with_name("ident-objc-file")
+             .default_value("")
+             .long("ident-objc-file")).get_matches();
+
 
     // let matches = clap_app!(rusty_lamp =>
     //                         (version: "0.1")
@@ -233,7 +307,7 @@ fn main() {
         println!("Package: {:?}", ann.parse::<bool>());
     }
 
-    match matches.value_of("INPUT") {
+    match matches.value_of("idl") {
         Some(i) => {
             match matches.occurrences_of("FMT") {
                 1 => {
@@ -251,12 +325,37 @@ fn main() {
                     rusty_lamp_lib::process(contents, &mut stdout);
                 },
                 _ => {
-                    rusty_lamp_lib::compile(i.into());
+                    println!("IDL: {}", i);
+                    let java_out = matches.value_of("java-out").unwrap();
+                    println!("Java Out: {}", java_out);
+                    let java_package = matches.value_of("java-package").unwrap();
+                    let ident_java_field = matches.value_of("ident-java-field").unwrap();
+
+                    let cpp_optional_template = matches.value_of("cpp-optional-template").unwrap();
+                    let cpp_optional_header = matches.value_of("cpp-optional-header").unwrap();
+                    let cpp_out = matches.value_of("cpp-out").unwrap();
+                    let cpp_namespace = matches.value_of("cpp-namespace").unwrap();
+
+                    let jni_out = matches.value_of("jni-out").unwrap();
+                    let ident_jni_class = matches.value_of("ident-jni-class").unwrap();
+                    let ident_jni_file = matches.value_of("ident-jni-file").unwrap();
+
+                    let objc_out = matches.value_of("objc-out").unwrap();
+                    let objc_type_prefix = matches.value_of("objc-type-prefix").unwrap();
+                    println!("Objective-C Prefix: {}", objc_type_prefix);
+
+                    let objcpp_out = matches.value_of("objcpp-out").unwrap();
+
+                    println!("C++ Optional Template: {}", cpp_optional_template);
+
+                    let typer = Typer::new();
+                    let spec = Spec::new("generated-src".into(), "cpp".into(), typer);
+                    rusty_lamp_lib::compile(i.into(), &spec);
                 }
             }
         },
         None => {
-            
+
         }
     }
 }

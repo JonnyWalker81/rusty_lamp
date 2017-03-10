@@ -1,3 +1,5 @@
+#![feature(conservative_impl_trait)]
+
 pub mod parser;
 pub mod generator;
 use parser::lexer::Lexer;
@@ -30,7 +32,7 @@ pub fn process(input: String, output: &mut Write) -> String {
     return String::new();
 }
 
-pub fn compile(main_file: String) {
+pub fn compile(main_file: String, spec: &Spec) {
     println!("Parsing...");
     let program = parse_file(main_file);
 
@@ -40,7 +42,7 @@ pub fn compile(main_file: String) {
     // }
 
     println!("Resolving...");
-    let mut resolver = Resolver::new();
+    let mut resolver = Resolver::new(spec.typer.clone());
     let result = resolver.resolve(&program);
     match result {
         Err(err) => {
@@ -48,19 +50,19 @@ pub fn compile(main_file: String) {
         },
         Ok(typer) => {
             println!("Generating...");
-            let spec = Spec::new("generated-src".into(), "cpp".into(), typer);
-            setup_directories(&spec);
+            // let spec = Spec::new("generated-src".into(), "cpp".into(), typer);
+            setup_directories(spec);
             let mut cpp_generator = Generator::new(CppGenerator::new());
-            cpp_generator.generate(&spec, &program);
+            cpp_generator.generate(spec, &program);
 
             let mut java_generator = Generator::new(JavaGenerator::new());
-            java_generator.generate(&spec, &program);
+            java_generator.generate(spec, &program);
 
             let mut jni_generator = Generator::new(JniGenerator::new());
-            jni_generator.generate(&spec, &program);
+            jni_generator.generate(spec, &program);
 
             let mut objc_generator = Generator::new(ObjcGenerator::new());
-            objc_generator.generate(&spec, &program);
+            objc_generator.generate(spec, &program);
             // generator.generate::<JavaGenerator>(&program);
             // generator.generate::<JniGenerator>(&program);
             // generator.generate::<ObjcGenerator>(&program);
