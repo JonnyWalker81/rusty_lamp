@@ -7,7 +7,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 
-type IdentConverter = Fn(String) -> String;
+pub type IdentConverter = Fn(String) -> String;
 
 // pub trait IdentConverter {
 //     fn convert(input: &String) -> String;
@@ -41,10 +41,10 @@ impl IdentStyleDefault {
 }
 
 pub struct IdentStyle {
-    cpp_style_default: IdentStyleDefault,
-    java_style_default: IdentStyleDefault,
-    objc_style_default: IdentStyleDefault,
-    styles: HashMap<&'static str, Arc<IdentConverter>>
+    pub cpp_style_default: IdentStyleDefault,
+    pub java_style_default: IdentStyleDefault,
+    pub objc_style_default: IdentStyleDefault,
+    pub styles: HashMap<&'static str, Arc<IdentConverter>>
 }
 
 
