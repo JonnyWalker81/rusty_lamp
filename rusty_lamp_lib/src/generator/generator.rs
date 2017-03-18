@@ -42,7 +42,7 @@ pub trait Generate {
     fn write_interface(&self, i: &StatementKind);
     fn make_writer(&self, spec: &Spec, file_name: &String) -> BufWriter<File> {
         // Open a file in write-only mode, returns `io::Result<File>`
-        let path = format!("{}/{}/{}.hpp", spec.root, spec.cpp_root, file_name);
+        let path = format!("{}/{}.hpp", spec.cpp_out_folder.clone().unwrap(), file_name);
         let mut file = match File::create(&path) {
             Err(why) => panic!("couldn't create {}: {}",
                             path,

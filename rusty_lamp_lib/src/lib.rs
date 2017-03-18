@@ -73,7 +73,7 @@ pub fn compile(main_file: String, spec: &Spec) {
 
 fn setup_directories(spec: &Spec) {
     fs::remove_dir_all("generated-src").unwrap_or_default();
-    fs::create_dir_all(format!("{}/{}", spec.root, spec.cpp_root)).unwrap_or_default();
+    // fs::create_dir_all(format!("{}/{}", spec.root, spec.cpp_root)).unwrap_or_default();
     fs::create_dir_all("generated-src/java").unwrap_or_default();
     fs::create_dir_all("generated-src/objc").unwrap_or_default();
 }

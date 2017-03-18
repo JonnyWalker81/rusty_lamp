@@ -12,15 +12,16 @@ pub type IdentConverter = Fn(String) -> String;
 // pub trait IdentConverter {
 //     fn convert(input: &String) -> String;
 // }
+#[derive(Clone)]
 pub struct IdentStyleDefault {
-    ty: Arc<IdentConverter>,
-    enum_type: Arc<IdentConverter>,
-    type_param: Arc<IdentConverter>,
-    method: Arc<IdentConverter>,
-    field: Arc<IdentConverter>,
-    local: Arc<IdentConverter>,
-    enm: Arc<IdentConverter>,
-    cnst: Arc<IdentConverter>
+    pub ty: Arc<IdentConverter>,
+    pub enum_type: Arc<IdentConverter>,
+    pub type_param: Arc<IdentConverter>,
+    pub method: Arc<IdentConverter>,
+    pub field: Arc<IdentConverter>,
+    pub local: Arc<IdentConverter>,
+    pub enm: Arc<IdentConverter>,
+    pub cnst: Arc<IdentConverter>
 }
 
 impl IdentStyleDefault {
@@ -146,7 +147,7 @@ impl IdentStyle {
         });
     }
 
-    pub fn infer(styles: &HashMap<&'static str, Arc<IdentConverter>>, input: String) -> Option<Arc<IdentConverter>> {
+    pub fn infer(styles: &HashMap<&'static str, Arc<IdentConverter>>, input: &String) -> Option<Arc<IdentConverter>> {
         for (s, func) in styles {
             if(input.ends_with(s)) {
                 let diff = input.len() - s.len();
@@ -162,16 +163,17 @@ impl IdentStyle {
         None
     }
 
-    pub fn build_ident_style(name: &'static str) -> Arc<IdentConverter> {
+    pub fn build_ident_style(name: &String) -> Option<Arc<IdentConverter>> {
         let ident_style = IdentStyle::new();
 
-        let infer = IdentStyle::infer(&ident_style.styles, name.into());
+        let infer = IdentStyle::infer(&ident_style.styles, name);
         match infer {
             Some(i) => {
-                i
+                Some(i)
             },
             None => {
-                panic!("invalid ident spec: {}", name)
+                // panic!("invalid ident spec: {}", name)
+                None
             }
         }
     }
